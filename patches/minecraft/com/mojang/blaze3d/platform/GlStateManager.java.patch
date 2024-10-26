@@ -1,5 +1,17 @@
 --- a/com/mojang/blaze3d/platform/GlStateManager.java
 +++ b/com/mojang/blaze3d/platform/GlStateManager.java
+@@ -94,6 +_,11 @@
+         }
+     }
+ 
++    public static boolean _isBlendEnabled() {
++        RenderSystem.assertOnRenderThread();
++        return BLEND.mode.enabled;
++    }
++
+     public static void _disableBlend() {
+         RenderSystem.assertOnRenderThread();
+         BLEND.mode.disable();
 @@ -519,9 +_,17 @@
          }
      }

@@ -11,15 +11,17 @@
          }
      }
  
-@@ -171,8 +_,11 @@
+@@ -171,8 +_,13 @@
          if (!(f < 1.0F)) {
              PostChain postchain = this.minecraft.getShaderManager().getPostChain(BLUR_POST_CHAIN_ID, LevelTargetBundle.MAIN_TARGETS);
              if (postchain != null) {
-+                // FORGE: Blending the blur was removed in 1.21. This is necessary for screen layering to work properly. https://github.com/MinecraftForge/MinecraftForge/issues/10114
-+                RenderSystem.enableBlend();
++                boolean wasBlendEnabled = RenderSystem.isBlendEnabled();
++                if (wasBlendEnabled)
++                    RenderSystem.disableBlend();
                  postchain.setUniform("Radius", f);
                  postchain.process(this.minecraft.getMainRenderTarget(), this.resourcePool);
-+                RenderSystem.disableBlend();
++                if (wasBlendEnabled)
++                    RenderSystem.enableBlend();
              }
          }
      }
