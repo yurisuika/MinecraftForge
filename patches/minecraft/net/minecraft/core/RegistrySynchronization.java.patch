@@ -4,8 +4,8 @@
  import net.minecraft.server.packs.repository.KnownPack;
  
  public class RegistrySynchronization {
--    public static final Set<ResourceKey<? extends Registry<?>>> NETWORKABLE_REGISTRIES = RegistryDataLoader.SYNCHRONIZED_REGISTRIES
-+    public static final Set<ResourceKey<? extends Registry<?>>> NETWORKABLE_REGISTRIES = net.minecraftforge.registries.DataPackRegistriesHooks.grabNetworkableRegistries(() -> RegistryDataLoader.SYNCHRONIZED_REGISTRIES
+-    private static final Set<ResourceKey<? extends Registry<?>>> NETWORKABLE_REGISTRIES = RegistryDataLoader.SYNCHRONIZED_REGISTRIES
++    private static final Set<ResourceKey<? extends Registry<?>>> NETWORKABLE_REGISTRIES = net.minecraftforge.registries.DataPackRegistriesHooks.grabNetworkableRegistries(() -> RegistryDataLoader.SYNCHRONIZED_REGISTRIES
          .stream()
          .map(RegistryDataLoader.RegistryData::key)
 -        .collect(Collectors.toUnmodifiableSet());

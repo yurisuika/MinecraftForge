@@ -15,6 +15,7 @@ import net.minecraft.Util;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.levelgen.feature.trunkplacers.BendingTrunkPlacer;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,8 +52,8 @@ public abstract class LootModifier implements IGlobalLootModifier {
 
     @NotNull
     @Override
-    public final ObjectArrayList<ItemStack> apply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        return this.combinedConditions.test(context) ? this.doApply(generatedLoot, context) : generatedLoot;
+    public final ObjectArrayList<ItemStack> apply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+        return this.combinedConditions.test(context) ? this.doApply(table, generatedLoot, context) : generatedLoot;
     }
 
     /**
@@ -63,5 +64,5 @@ public abstract class LootModifier implements IGlobalLootModifier {
      * @return modified loot drops
      */
     @NotNull
-    protected abstract ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context);
+    protected abstract ObjectArrayList<ItemStack> doApply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context);
 }

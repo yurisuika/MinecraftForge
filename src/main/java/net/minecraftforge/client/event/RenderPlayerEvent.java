@@ -9,10 +9,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.renderer.entity.state.PlayerRenderState;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.Cancelable;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -24,21 +24,24 @@ import org.jetbrains.annotations.ApiStatus;
  * @see RenderPlayerEvent.Post
  * @see PlayerRenderer
  */
-public abstract class RenderPlayerEvent extends PlayerEvent {
+public abstract class RenderPlayerEvent extends Event {
+    private final PlayerRenderState state;
     private final PlayerRenderer renderer;
-    private final float partialTick;
     private final PoseStack poseStack;
     private final MultiBufferSource multiBufferSource;
     private final int packedLight;
 
     @ApiStatus.Internal
-    protected RenderPlayerEvent(Player player, PlayerRenderer renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        super(player);
+    protected RenderPlayerEvent(PlayerRenderState state, PlayerRenderer renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        this.state = state;
         this.renderer = renderer;
-        this.partialTick = partialTick;
         this.poseStack = poseStack;
         this.multiBufferSource = multiBufferSource;
         this.packedLight = packedLight;
+    }
+
+    public PlayerRenderState getState() {
+        return this.state;
     }
 
     /**
@@ -46,13 +49,6 @@ public abstract class RenderPlayerEvent extends PlayerEvent {
      */
     public PlayerRenderer getRenderer() {
         return renderer;
-    }
-
-    /**
-     * {@return the partial tick}
-     */
-    public float getPartialTick() {
-        return partialTick;
     }
 
     /**
@@ -92,8 +88,8 @@ public abstract class RenderPlayerEvent extends PlayerEvent {
     @Cancelable
     public static class Pre extends RenderPlayerEvent {
         @ApiStatus.Internal
-        public Pre(Player player, PlayerRenderer renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-            super(player, renderer, partialTick, poseStack, multiBufferSource, packedLight);
+        public Pre(PlayerRenderState state, PlayerRenderer renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+            super(state, renderer, poseStack, multiBufferSource, packedLight);
         }
     }
 
@@ -107,8 +103,8 @@ public abstract class RenderPlayerEvent extends PlayerEvent {
      */
     public static class Post extends RenderPlayerEvent {
         @ApiStatus.Internal
-        public Post(Player player, PlayerRenderer renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-            super(player, renderer, partialTick, poseStack, multiBufferSource, packedLight);
+        public Post(PlayerRenderState state, PlayerRenderer renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+            super(state, renderer, poseStack, multiBufferSource, packedLight);
         }
     }
 }

@@ -8,7 +8,6 @@ package net.minecraftforge.common.data;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.tags.IntrinsicHolderTagsProvider;
 import net.minecraft.data.tags.ItemTagsProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -32,7 +31,7 @@ public final class ForgeItemTagsProvider extends ItemTagsProvider {
         super(output, lookupProvider, blockTagProvider, "forge", existingFileHelper);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "removal" })
     @Override
     public void addTags(HolderLookup.Provider lookupProvider) {
         copy(Tags.Blocks.BARRELS, Tags.Items.BARRELS);
@@ -518,7 +517,7 @@ public final class ForgeItemTagsProvider extends ItemTagsProvider {
         for (DyeColor color : DyeColor.values()) {
             ResourceLocation key = ResourceLocation.fromNamespaceAndPath("minecraft", pattern.replace("{color}", color.getName()));
             TagKey<Item> tag = getForgeItemTag(prefix + color.getName());
-            Item item = BuiltInRegistries.ITEM.get(key);
+            Item item = BuiltInRegistries.ITEM.getValue(key);
             if (item == null || item == Items.AIR)
                 throw new IllegalStateException("Unknown vanilla item: " + key);
             tag(tag).add(item);
@@ -582,11 +581,11 @@ public final class ForgeItemTagsProvider extends ItemTagsProvider {
     }
 
     private static TagKey<Block> forgeBlockTagKey(String path) {
-        return BlockTags.create(ResourceLocation.fromNamespaceAndPath("forge", path));
+        return BlockTags.create(forgeRl(path));
     }
 
     private static TagKey<Item> forgeItemTagKey(String path) {
-        return ItemTags.create(ResourceLocation.fromNamespaceAndPath("forge", path));
+        return ItemTags.create(forgeRl(path));
     }
 
     @Override

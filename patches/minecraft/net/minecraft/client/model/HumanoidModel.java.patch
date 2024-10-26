@@ -1,24 +1,24 @@
 --- a/net/minecraft/client/model/HumanoidModel.java
 +++ b/net/minecraft/client/model/HumanoidModel.java
-@@ -308,6 +_,8 @@
+@@ -259,6 +_,8 @@
              case BRUSH:
                  this.rightArm.xRot = this.rightArm.xRot * 0.5F - (float) (Math.PI / 5);
                  this.rightArm.yRot = 0.0F;
 +            default:
-+                this.rightArmPose.applyTransform(this, p_102876_, net.minecraft.world.entity.HumanoidArm.RIGHT);
++                p_366231_.applyTransform(this, p_362371_, net.minecraft.world.entity.HumanoidArm.RIGHT);
          }
      }
  
-@@ -352,6 +_,8 @@
+@@ -303,6 +_,8 @@
              case BRUSH:
                  this.leftArm.xRot = this.leftArm.xRot * 0.5F - (float) (Math.PI / 5);
                  this.leftArm.yRot = 0.0F;
 +            default:
-+                this.leftArmPose.applyTransform(this, p_102879_, net.minecraft.world.entity.HumanoidArm.LEFT);
++                p_370002_.applyTransform(this, p_363560_, net.minecraft.world.entity.HumanoidArm.LEFT);
          }
      }
  
-@@ -451,7 +_,7 @@
+@@ -381,7 +_,7 @@
      }
  
      @OnlyIn(Dist.CLIENT)
@@ -27,7 +27,7 @@
          EMPTY(false),
          ITEM(false),
          BLOCK(false),
-@@ -467,10 +_,28 @@
+@@ -397,10 +_,28 @@
  
          private ArmPose(final boolean p_102896_) {
              this.twoHanded = p_102896_;
@@ -51,8 +51,8 @@
 +            throw new IllegalStateException("Enum not extended");
 +        }
 +
-+        public <T extends LivingEntity> void applyTransform(HumanoidModel<T> model, T entity, net.minecraft.world.entity.HumanoidArm arm) {
-+            if (this.forgeArmPose != null) this.forgeArmPose.applyTransform(model, entity, arm);
++        public <T extends HumanoidRenderState> void applyTransform(HumanoidModel<T> model, T state, net.minecraft.world.entity.HumanoidArm arm) {
++            if (this.forgeArmPose != null) this.forgeArmPose.applyTransform(model, state, arm);
          }
      }
  }

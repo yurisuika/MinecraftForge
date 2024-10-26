@@ -21,7 +21,6 @@ import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
  * @see RegisterGeometryLoaders
  * @see RegisterClientReloadListenersEvent
  */
-public interface IGeometryLoader<T extends IUnbakedGeometry<T>>
-{
+public interface IGeometryLoader<T extends IUnbakedGeometry<T>> {
     T read(JsonObject jsonObject, JsonDeserializationContext deserializationContext) throws JsonParseException;
 }

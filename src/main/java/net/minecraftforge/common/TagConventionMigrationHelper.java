@@ -5,6 +5,7 @@
 
 package net.minecraftforge.common;
 
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -47,7 +48,10 @@ public final class TagConventionMigrationHelper {
         registryAccess.registries().forEach(registryEntry -> {
             if (registryEntry.key().location().getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE)) {
                 FOUND_LEGACY_TAGS.addAll(
-                        registryEntry.value().getTagNames().filter(TagConventionMappings.MAPPINGS::containsKey).toList()
+                    registryEntry.value().getTags()
+                        .map(HolderSet.Named::key)
+                        .filter(TagConventionMappings.MAPPINGS::containsKey)
+                        .toList()
                 );
             }
         });
@@ -60,7 +64,7 @@ public final class TagConventionMigrationHelper {
             Warning for mod devs: Found known legacy tags that have direct common convention equivalents - consider migrating these to improve compatibility with other mods.
             Note: This feature isn't fully comprehensive - see Forge's net.minecraftforge.common.Tags class for a full list of tags.
             You can disable this message by setting "migrationHelperMode" to "OFF" in Forge's common config.
-            
+
             Here are some suggestions for replacements:""".stripIndent());
 
         for (var legacyTag : FOUND_LEGACY_TAGS) {

@@ -1,6 +1,6 @@
 --- a/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java
 +++ b/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java
-@@ -35,7 +_,7 @@
+@@ -36,7 +_,7 @@
  public record ClientboundCustomPayloadPacket(CustomPacketPayload payload) implements Packet<ClientCommonPacketListener> {
      private static final int MAX_PAYLOAD_SIZE = 1048576;
      public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundCustomPayloadPacket> GAMEPLAY_STREAM_CODEC = CustomPacketPayload.<RegistryFriendlyByteBuf>codec(
@@ -9,7 +9,7 @@
              Util.make(
                  Lists.newArrayList(
                      new CustomPacketPayload.TypeAndCodec<>(BrandPayload.TYPE, BrandPayload.STREAM_CODEC),
-@@ -64,7 +_,7 @@
+@@ -66,7 +_,7 @@
          )
          .map(ClientboundCustomPayloadPacket::new, ClientboundCustomPayloadPacket::payload);
      public static final StreamCodec<FriendlyByteBuf, ClientboundCustomPayloadPacket> CONFIG_STREAM_CODEC = CustomPacketPayload.<FriendlyByteBuf>codec(

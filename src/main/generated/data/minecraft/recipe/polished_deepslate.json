@@ -2,9 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": {
-      "tag": "forge:cobblestone/deepslate"
-    }
+    "S": "#forge:cobblestone/deepslate"
   },
   "pattern": [
     "SS",

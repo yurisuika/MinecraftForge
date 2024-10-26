@@ -28,7 +28,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
@@ -62,8 +61,8 @@ import net.minecraftforge.common.world.ForgeBiomeModifiers.RemoveSpawnsBiomeModi
 import net.minecraftforge.common.world.NoneBiomeModifier;
 import net.minecraftforge.common.world.NoneStructureModifier;
 import net.minecraftforge.common.world.StructureModifier;
-import net.minecraftforge.event.TagsUpdatedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
 import net.minecraftforge.fml.*;
@@ -78,11 +77,10 @@ import net.minecraftforge.registries.holdersets.NotHolderSet;
 import net.minecraftforge.registries.holdersets.OrHolderSet;
 import net.minecraftforge.network.NetworkInitialization;
 import net.minecraftforge.network.tasks.ForgeNetworkConfigurationHandler;
-import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.event.entity.EntityAttributeModificationEvent;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.server.command.EnumArgument;
 import net.minecraftforge.server.command.ModIdArgument;
-import net.minecraftforge.server.permission.events.PermissionGatherEvent;
 import net.minecraftforge.server.permission.nodes.PermissionNode;
 import net.minecraftforge.server.permission.nodes.PermissionTypes;
 import net.minecraftforge.unsafe.UnsafeHacks;
@@ -393,25 +391,22 @@ public class ForgeMod {
         modEventBus.addListener(this::gatherData);
         modEventBus.addListener(this::registerFluids);
         modEventBus.addListener(this::registerVanillaDisplayContexts);
-        for (DeferredRegister<?> r : registries) {
-            r.register(modEventBus);
-        }
+        modEventBus.addListener(this::onRegisterAttributes);
+        ForgeDeferredRegistriesSetup.setup(modEventBus);
+        for (var reg : registries)
+            reg.register(modEventBus);
 
-        MinecraftForge.EVENT_BUS.addListener(this::serverStopping);
         context.registerConfig(ModConfig.Type.CLIENT, ForgeConfig.clientSpec);
         context.registerConfig(ModConfig.Type.SERVER, ForgeConfig.serverSpec);
         context.registerConfig(ModConfig.Type.COMMON, ForgeConfig.commonSpec);
         modEventBus.register(ForgeConfig.class);
-        ForgeDeferredRegistriesSetup.setup(modEventBus);
+
         // Forge does not display problems when the remote is not matching.
         context.registerDisplayTest(IExtensionPoint.DisplayTest.IGNORE_ALL_VERSION);
         StartupMessageManager.addModMessage("Forge version "+ForgeVersion.getVersion());
 
         MinecraftForge.EVENT_BUS.addListener(VillagerTradingManager::loadTrades);
         MinecraftForge.EVENT_BUS.register(MinecraftForge.INTERNAL_HANDLER);
-        MinecraftForge.EVENT_BUS.addListener(this::mappingChanged);
-        MinecraftForge.EVENT_BUS.addListener(this::tagsUpdated);
-        MinecraftForge.EVENT_BUS.addListener(this::registerPermissionNodes);
         MinecraftForge.EVENT_BUS.register(new ForgeNetworkConfigurationHandler());
 
         ForgeRegistries.ITEMS.tags().addOptionalTagDefaults(Tags.Items.ENCHANTING_FUELS, Set.of(ForgeRegistries.ITEMS.getDelegateOrThrow(Items.LAPIS_LAZULI)));
@@ -426,16 +421,13 @@ public class ForgeMod {
         //VanillaPacketSplitter.register();
     }
 
-    public void serverStopping(ServerStoppingEvent evt) {
-        WorldWorkerManager.clear();
-    }
 
-    public void mappingChanged(IdMappingEvent evt) {
-        Ingredient.invalidateAll();
-    }
-
-    public void tagsUpdated(TagsUpdatedEvent evt) {
-        Ingredient.invalidateAll();
+    @SubscribeEvent
+    public void onRegisterAttributes(EntityAttributeModificationEvent event) {
+        for (var type : event.getTypes()) {
+            event.add(type, ForgeMod.SWIM_SPEED.getHolder().get());
+            event.add(type, ForgeMod.NAMETAG_DISTANCE.getHolder().get());
+        }
     }
 
     public void gatherData(GatherDataEvent event) {
@@ -457,7 +449,7 @@ public class ForgeMod {
         gen.addProvider(event.includeServer(), new ForgeEntityTypeTagsProvider(packOutput, lookupProvider, existingFileHelper));
         gen.addProvider(event.includeServer(), new ForgeFluidTagsProvider(packOutput, lookupProvider, existingFileHelper));
         gen.addProvider(event.includeServer(), new ForgeEnchantmentTagsProvider(packOutput, lookupProvider, existingFileHelper));
-        gen.addProvider(event.includeServer(), new ForgeRecipeProvider(packOutput, lookupProvider));
+        gen.addProvider(event.includeServer(), new ForgeRecipeProvider.Runner(packOutput, lookupProvider));
         gen.addProvider(event.includeServer(), new ForgeLootTableProvider(packOutput, lookupProvider));
         gen.addProvider(event.includeServer(), new ForgeBiomeTagsProvider(packOutput, lookupProvider, existingFileHelper));
         gen.addProvider(event.includeServer(), new ForgeStructureTagsProvider(packOutput, lookupProvider, existingFileHelper));
@@ -525,10 +517,6 @@ public class ForgeMod {
 
     public static final PermissionNode<Boolean> USE_SELECTORS_PERMISSION = new PermissionNode<>("forge", "use_entity_selectors",
             PermissionTypes.BOOLEAN, (player, uuid, contexts) -> player != null && player.hasPermissions(Commands.LEVEL_GAMEMASTERS));
-
-    public void registerPermissionNodes(PermissionGatherEvent.Nodes event) {
-        event.addNodes(USE_SELECTORS_PERMISSION);
-    }
 
     /**
      * TODO: Remove when {@link ForgeRegistry#addAlias(ResourceLocation, ResourceLocation)} is elevated to {@link IForgeRegistry}.

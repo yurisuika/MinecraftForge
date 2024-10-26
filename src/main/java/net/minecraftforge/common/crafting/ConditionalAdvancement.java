@@ -84,7 +84,7 @@ public class ConditionalAdvancement {
         public JsonObject build(HolderLookup.Provider lookup) {
             var json = new JsonObject();
             var array = new JsonArray();
-            json.add("advancements", array);
+            json.add("forge:conditional", array);
 
             var ops = lookup.createSerializationContext(JsonOps.INSTANCE);
 

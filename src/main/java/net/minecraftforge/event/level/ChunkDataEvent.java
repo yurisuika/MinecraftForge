@@ -5,14 +5,13 @@
 
 package net.minecraftforge.event.level;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.chunk.status.ChunkType;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.minecraft.world.level.chunk.storage.SerializableChunkData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -27,26 +26,26 @@ import net.minecraftforge.eventbus.api.Event;
  * All children of this event are fired on the {@link MinecraftForge#EVENT_BUS}.<br>
  **/
 public class ChunkDataEvent extends ChunkEvent {
-    private final CompoundTag data;
+    private final SerializableChunkData data;
 
-    public ChunkDataEvent(ChunkAccess chunk, CompoundTag data) {
+    public ChunkDataEvent(ChunkAccess chunk, SerializableChunkData data) {
         super(chunk);
         this.data = data;
     }
 
-    public ChunkDataEvent(ChunkAccess chunk, LevelAccessor world, CompoundTag data) {
+    public ChunkDataEvent(ChunkAccess chunk, LevelAccessor world, SerializableChunkData data) {
         super(chunk, world);
         this.data = data;
     }
 
-    public CompoundTag getData() {
+    public SerializableChunkData getData() {
         return data;
     }
 
     /**
      * ChunkDataEvent.Load is fired when vanilla Minecraft attempts to load Chunk data.<br>
      * This event is fired during chunk loading in
-     * {@link ChunkSerializer#read(ServerLevel, PoiManager, ChunkPos, CompoundTag)} which means it is async, so be careful.<br>
+     * {@link ChunkSerializer#read(ServerLevel, PoiManager, ChunkPos, SerializableChunkData)} which means it is async, so be careful.<br>
      * <br>
      * This event is not {@link Cancelable}.<br>
      * <br>
@@ -57,7 +56,7 @@ public class ChunkDataEvent extends ChunkEvent {
     public static class Load extends ChunkDataEvent {
         private ChunkType status;
 
-        public Load(ChunkAccess chunk, CompoundTag data, ChunkType status) {
+        public Load(ChunkAccess chunk, SerializableChunkData data, ChunkType status) {
             super(chunk, data);
             this.status = status;
         }
@@ -79,7 +78,7 @@ public class ChunkDataEvent extends ChunkEvent {
      * This event is fired on the {@link MinecraftForge#EVENT_BUS}.<br>
      **/
     public static class Save extends ChunkDataEvent {
-        public Save(ChunkAccess chunk, LevelAccessor world, CompoundTag data) {
+        public Save(ChunkAccess chunk, LevelAccessor world, SerializableChunkData data) {
             super(chunk, world, data);
         }
     }

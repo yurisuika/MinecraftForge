@@ -28,17 +28,21 @@ import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderLookup.Provider;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeBuilder;
 import net.minecraft.data.recipes.RecipeOutput;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.crafting.conditions.ConditionCodec;
 import net.minecraftforge.common.crafting.conditions.ICondition;
@@ -50,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * disabling the entire recipe, it has sub-recipes that themselves have conditions.
  *
  * And when being deserialized it returns the first entry that passes the conditional check.
- * This basically means that you can have muultiple variants all use the same recipe name, and
+ * This basically means that you can have multiple variants all use the same recipe name, and
  * only one will ever be loaded.
  *
  * This also means that you can wrap ALL recipes in a Conditional even those that don't explicitly
@@ -67,7 +71,7 @@ public class ConditionalRecipe {
 
         private final RecipeOutput bouncer = new RecipeOutput() {
             @Override
-            public void accept(ResourceLocation id, Recipe<?> value, @Nullable AdvancementHolder advancement) {
+            public void accept(ResourceKey<Recipe<?>> id, Recipe<?> value, @Nullable AdvancementHolder advancement) {
                 recipe(id, value, advancement);
             }
 
@@ -78,7 +82,7 @@ public class ConditionalRecipe {
             }
 
             @Override
-            public void accept(ResourceLocation id, Recipe<?> recipe, ResourceLocation advancementId, JsonElement advancement) {
+            public void accept(ResourceKey<Recipe<?>> id, Recipe<?> recipe, ResourceLocation advancementId, JsonElement advancement) {
                 AdvancementHolder holder = null;
                 if (advancement != null) {
                     Advancement adv = Advancement.CODEC.parse(JsonOps.INSTANCE, advancement).getOrThrow(JsonParseException::new);
@@ -91,6 +95,9 @@ public class ConditionalRecipe {
             public Provider registry() {
                 return null;
             }
+
+            @Override
+            public void includeRootAdvancement() { }
         };
 
         @Nullable
@@ -120,7 +127,7 @@ public class ConditionalRecipe {
             return this;
         }
 
-        public Builder recipe(ResourceLocation id, Recipe<?> recipe, @Nullable AdvancementHolder advancement) {
+        public Builder recipe(ResourceKey<Recipe<?>> id, Recipe<?> recipe, @Nullable AdvancementHolder advancement) {
             if (condition == null)
                 throw new IllegalStateException("Can not add a recipe with no conditions.");
             recipes.add(new InnerRecipe(this.condition, recipe));
@@ -163,7 +170,8 @@ public class ConditionalRecipe {
                 advancementId = null;
             }
 
-            out.accept(id, new Wrapper(mainCondition, recipes), advancementId, advancement);
+            var key = ResourceKey.create(Registries.RECIPE, id);
+            out.accept(key, new Wrapper(mainCondition, recipes), advancementId, advancement);
         }
     }
 
@@ -173,16 +181,30 @@ public class ConditionalRecipe {
     private static class Wrapper implements Recipe<CraftingInput> {
         @Override public boolean matches(CraftingInput inv, Level level) { return false; }
         @Override public ItemStack assemble(CraftingInput inv, HolderLookup.Provider reg) { return null; }
-        @Override public boolean canCraftInDimensions(int width, int height) { return false; }
-        @Override public ItemStack getResultItem(HolderLookup.Provider reg) { return null; }
-        @Override public RecipeSerializer<?> getSerializer() { return ConditionalRecipe.SERIALZIER; }
-        @Override public RecipeType<?> getType() { throw new UnsupportedOperationException(); }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Override
+        public RecipeSerializer<? extends Recipe<CraftingInput>> getSerializer() {
+            return (RecipeSerializer)ConditionalRecipe.SERIALZIER;
+        }
+
+        @Override public RecipeType<? extends Recipe<CraftingInput>> getType() { throw new UnsupportedOperationException(); }
 
         @Nullable private final ICondition main;
         private final List<InnerRecipe> recipes;
         private Wrapper(@Nullable ICondition main, List<InnerRecipe> recipes) {
             this.main = main;
             this.recipes = recipes;
+        }
+
+        @Override
+        public PlacementInfo placementInfo() {
+            return PlacementInfo.NOT_PLACEABLE;
+        }
+
+        @Override
+        public RecipeBookCategory recipeBookCategory() {
+            return RecipeBookCategories.STONECUTTER;
         }
 
     }

@@ -25,24 +25,20 @@ import net.minecraft.world.level.Level;
  * Children do not use {@link HasResult}.<br>
  * Children of this event are fired on the {@link MinecraftForge#EVENT_BUS}.<br>
  */
-public class ExplosionEvent extends Event
-{
+public class ExplosionEvent extends Event {
     private final Level level;
     private final Explosion explosion;
 
-    public ExplosionEvent(Level level, Explosion explosion)
-    {
+    public ExplosionEvent(Level level, Explosion explosion) {
         this.level = level;
         this.explosion = explosion;
     }
 
-    public Level getLevel()
-    {
+    public Level getLevel() {
         return level;
     }
 
-    public Explosion getExplosion()
-    {
+    public Explosion getExplosion() {
         return explosion;
     }
 
@@ -53,10 +49,8 @@ public class ExplosionEvent extends Event
      * This event is fired on the {@link MinecraftForge#EVENT_BUS}.<br>
      */
     @Cancelable
-    public static class Start extends ExplosionEvent
-    {
-        public Start(Level level, Explosion explosion)
-        {
+    public static class Start extends ExplosionEvent {
+        public Start(Level level, Explosion explosion) {
             super(level, explosion);
         }
     }
@@ -67,25 +61,23 @@ public class ExplosionEvent extends Event
      * This event does not use {@link HasResult}.<br>
      * This event is fired on the {@link MinecraftForge#EVENT_BUS}.<br>
      */
-    public static class Detonate extends ExplosionEvent
-    {
+    public static class Detonate extends ExplosionEvent {
+        private final List<BlockPos> blocks;
         private final List<Entity> entityList;
 
-        public Detonate(Level level, Explosion explosion, List<Entity> entityList)
-        {
+        public Detonate(Level level, Explosion explosion, List<BlockPos> blocks, List<Entity> entityList) {
             super(level, explosion);
+            this.blocks = blocks;
             this.entityList = entityList;
         }
 
         /** return the list of blocks affected by the explosion. */
-        public List<BlockPos> getAffectedBlocks()
-        {
-            return getExplosion().getToBlow();
+        public List<BlockPos> getAffectedBlocks() {
+            return blocks;
         }
 
         /** return the list of entities affected by the explosion. */
-        public List<Entity> getAffectedEntities()
-        {
+        public List<Entity> getAffectedEntities() {
             return entityList;
         }
     }

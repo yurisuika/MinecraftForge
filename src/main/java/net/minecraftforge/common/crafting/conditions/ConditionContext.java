@@ -7,36 +7,27 @@ package net.minecraftforge.common.crafting.conditions;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagManager;
+import net.minecraft.tags.TagKey;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.util.List;
 
 public class ConditionContext implements ICondition.IContext {
-    private final TagManager tagManager;
-    private Map<ResourceKey<?>, Map<ResourceLocation, Collection<Holder<?>>>> loadedTags = null;
+    private final List<Registry.PendingTags<?>> pendingTags;
 
-    public ConditionContext(TagManager tagManager) {
-        this.tagManager = tagManager;
+    public ConditionContext(List<Registry.PendingTags<?>> pendingTags) {
+        this.pendingTags = pendingTags;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public <T> Map<ResourceLocation, Collection<Holder<T>>> getAllTags(ResourceKey<? extends Registry<T>> registry) {
-        if (loadedTags == null) {
-            var tags = tagManager.getResult();
-            if (tags.isEmpty()) throw new IllegalStateException("Tags have not been loaded yet.");
-
-            loadedTags = new IdentityHashMap<>();
-            for (var loadResult : tags) {
-                var map = Collections.unmodifiableMap(loadResult.tags());
-                loadedTags.put(loadResult.key(), (Map)map);
-            }
+    public <T> Collection<Holder<T>> getTag(TagKey<T> key) {
+        for (var entry : this.pendingTags) {
+            if (entry.key() != key.registry())
+                continue;
+            @SuppressWarnings("unchecked")
+            var typed = ((Registry.PendingTags<T>)entry);
+            return typed.getPending(key);
         }
-        return (Map)loadedTags.getOrDefault(registry, Collections.emptyMap());
+        return List.of();
     }
 }

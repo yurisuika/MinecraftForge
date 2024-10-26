@@ -8,10 +8,9 @@ package net.minecraftforge.client.event;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.Entity;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.LogicalSide;
@@ -33,25 +32,29 @@ import org.jetbrains.annotations.ApiStatus;
  * @see EntityRenderer
  */
 @Event.HasResult
-public class RenderNameTagEvent extends EntityEvent {
+public class RenderNameTagEvent extends Event {
     private Component nameplateContent;
+    private final EntityRenderState state;
     private final Component originalContent;
-    private final EntityRenderer<?> entityRenderer;
+    private final EntityRenderer<?, ?> entityRenderer;
     private final PoseStack poseStack;
     private final MultiBufferSource multiBufferSource;
     private final int packedLight;
-    private final float partialTick;
 
     @ApiStatus.Internal
-    public RenderNameTagEvent(Entity entity, Component content, EntityRenderer<?> entityRenderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight, float partialTick) {
-        super(entity);
+    public RenderNameTagEvent(EntityRenderState state, Component content, EntityRenderer<?, ?> entityRenderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        this.state = state;
         this.originalContent = content;
         this.setContent(this.originalContent);
         this.entityRenderer = entityRenderer;
         this.poseStack = poseStack;
         this.multiBufferSource = multiBufferSource;
         this.packedLight = packedLight;
-        this.partialTick = partialTick;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends EntityRenderState> T getState() {
+        return (T)state;
     }
 
     /**
@@ -80,7 +83,7 @@ public class RenderNameTagEvent extends EntityEvent {
     /**
      * {@return the entity renderer rendering the nameplate}
      */
-    public EntityRenderer<?> getEntityRenderer() {
+    public EntityRenderer<?, ?> getEntityRenderer() {
         return this.entityRenderer;
     }
 
@@ -105,12 +108,5 @@ public class RenderNameTagEvent extends EntityEvent {
      */
     public int getPackedLight() {
         return this.packedLight;
-    }
-
-    /**
-     * {@return the partial tick}
-     */
-    public float getPartialTick() {
-        return this.partialTick;
     }
 }

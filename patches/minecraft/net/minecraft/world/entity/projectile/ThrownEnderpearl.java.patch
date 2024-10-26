@@ -1,7 +1,7 @@
 --- a/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 +++ b/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
-@@ -66,6 +_,12 @@
- 
+@@ -126,6 +_,13 @@
+                 Vec3 vec3 = this.oldPosition();
                  if (entity instanceof ServerPlayer serverplayer) {
                      if (serverplayer.connection.isAcceptingMessages()) {
 +                        var event = net.minecraftforge.event.ForgeEventFactory.onEnderPearlLand(serverplayer, this.getX(), this.getY(), this.getZ(), this, 5.0F, p_37504_);
@@ -9,22 +9,17 @@
 +                            this.discard();
 +                            return;
 +                        }
++                        vec3 = event.getTarget();
 +
                          if (this.random.nextFloat() < 0.05F && serverlevel.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)) {
-                             Endermite endermite = EntityType.ENDERMITE.create(serverlevel);
+                             Endermite endermite = EntityType.ENDERMITE.create(serverlevel, EntitySpawnReason.TRIGGERED);
                              if (endermite != null) {
-@@ -76,12 +_,12 @@
+@@ -152,7 +_,7 @@
+                         if (serverplayer1 != null) {
+                             serverplayer1.resetFallDistance();
+                             serverplayer1.resetCurrentImpulseContext();
+-                            serverplayer1.hurtServer(serverplayer.serverLevel(), this.damageSources().enderPearl(), 5.0F);
++                            serverplayer1.hurtServer(serverplayer.serverLevel(), this.damageSources().enderPearl(), event.getAttackDamage());
+                         }
  
-                         entity.changeDimension(
-                             new DimensionTransition(
--                                serverlevel, this.position(), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot(), DimensionTransition.DO_NOTHING
-+                                serverlevel, event.getTarget(), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot(), DimensionTransition.DO_NOTHING
-                             )
-                         );
-                         entity.resetFallDistance();
-                         serverplayer.resetCurrentImpulseContext();
--                        entity.hurt(this.damageSources().fall(), 5.0F);
-+                        entity.hurt(this.damageSources().fall(), event.getAttackDamage());
-                         this.playSound(serverlevel, this.position());
-                     }
-                 } else {
+                         this.playSound(serverlevel, vec3);

@@ -82,11 +82,11 @@
              try {
                  WorldLoader.InitConfig worldloader$initconfig = loadOrCreateConfig(dedicatedserversettings.getProperties(), dynamic1, flag, packrepository);
 @@ -214,6 +_,16 @@
-                                             worlddimensions = dedicatedserverproperties.createDimensions(p_308589_.datapackWorldgen());
+                                             worlddimensions = dedicatedserverproperties.createDimensions(p_358511_.datapackWorldgen());
                                          }
  
 +                                        //Forge: Do a write-read-cycle to inject modded dimensions on first start of a dedicated server into its generated world dimensions list.
-+                                        var dynamicops = net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, p_308589_.datapackWorldgen());
++                                        var dynamicops = net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, p_358511_.datapackWorldgen());
 +                                        worlddimensions = WorldDimensions.CODEC.encoder()
 +                                            .encodeStart(dynamicops, worlddimensions)
 +                                            .flatMap((writtenPayloadWithModdedDimensions) ->
@@ -96,7 +96,7 @@
 +                                            .orElse(worlddimensions);
 +
                                          WorldDimensions.Complete worlddimensions$complete = worlddimensions.bake(registry);
-                                         Lifecycle lifecycle = worlddimensions$complete.lifecycle().add(p_308589_.datapackWorldgen().allRegistriesLifecycle());
+                                         Lifecycle lifecycle = worlddimensions$complete.lifecycle().add(p_358511_.datapackWorldgen().allRegistriesLifecycle());
                                          return new WorldLoader.DataLoadOutput<>(
 @@ -244,9 +_,16 @@
  

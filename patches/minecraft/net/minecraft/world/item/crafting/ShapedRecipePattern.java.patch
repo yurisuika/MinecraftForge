@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/item/crafting/ShapedRecipePattern.java
 +++ b/net/minecraft/world/item/crafting/ShapedRecipePattern.java
-@@ -212,18 +_,22 @@
+@@ -204,18 +_,22 @@
          return this.ingredients;
      }
  

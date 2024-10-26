@@ -1,7 +1,7 @@
 --- a/net/minecraft/client/particle/ParticleEngine.java
 +++ b/net/minecraft/client/particle/ParticleEngine.java
 @@ -77,11 +_,11 @@
-         ParticleRenderType.TERRAIN_SHEET, ParticleRenderType.PARTICLE_SHEET_OPAQUE, ParticleRenderType.PARTICLE_SHEET_LIT, ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT, ParticleRenderType.CUSTOM
+         ParticleRenderType.TERRAIN_SHEET, ParticleRenderType.PARTICLE_SHEET_OPAQUE, ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT, ParticleRenderType.CUSTOM
      );
      protected ClientLevel level;
 -    private final Map<ParticleRenderType, Queue<Particle>> particles = Maps.newIdentityHashMap();
@@ -14,8 +14,8 @@
      private final Queue<Particle> particlesToAdd = Queues.newArrayDeque();
      private final Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets = Maps.newHashMap();
      private final TextureAtlas textureAtlas;
-@@ -212,10 +_,14 @@
-         this.register(ParticleTypes.OMINOUS_SPAWNING, FlyStraightTowardsParticle.OminousSpawnProvider::new);
+@@ -214,10 +_,14 @@
+         this.register(ParticleTypes.BLOCK_CRUMBLE, new TerrainParticle.CrumblingProvider());
      }
  
 +    /** @deprecated Register via {@link net.minecraftforge.client.event.RegisterParticleProvidersEvent} */
@@ -30,7 +30,7 @@
      public <T extends ParticleOptions> void register(ParticleType<T> p_273423_, ParticleProvider.Sprite<T> p_273134_) {
          this.register(
              p_273423_,
-@@ -232,10 +_,12 @@
+@@ -234,10 +_,12 @@
          );
      }
  
@@ -44,7 +44,7 @@
      }
  
      @Override
-@@ -361,7 +_,7 @@
+@@ -357,7 +_,7 @@
      private <T extends ParticleOptions> Particle makeParticle(
          T p_107396_, double p_107397_, double p_107398_, double p_107399_, double p_107400_, double p_107401_, double p_107402_
      ) {
@@ -53,7 +53,7 @@
          return particleprovider == null
              ? null
              : particleprovider.createParticle(p_107396_, this.level, p_107397_, p_107398_, p_107399_, p_107400_, p_107401_, p_107402_);
-@@ -437,11 +_,19 @@
+@@ -433,17 +_,26 @@
          }
      }
  
@@ -61,7 +61,7 @@
 +    /**@deprecated Forge: use {@link #render(LightTexture, Camera, float, net.minecraft.client.renderer.culling.Frustum)} with Frustum as additional parameter*/
 +    @Deprecated
      public void render(LightTexture p_107339_, Camera p_107340_, float p_107341_) {
-+        render(p_107339_, p_107340_, p_107341_);
++        render(p_107339_, p_107340_, p_107341_, null);
 +    }
 +
 +    public void render(LightTexture p_107339_, Camera p_107340_, float p_107341_, @Nullable net.minecraft.client.renderer.culling.Frustum frustum) {
@@ -73,8 +73,7 @@
 +            if (particlerendertype == ParticleRenderType.NO_RENDER) continue;
              Queue<Particle> queue = this.particles.get(particlerendertype);
              if (queue != null && !queue.isEmpty()) {
-                 RenderSystem.setShader(GameRenderer::getParticleShader);
-@@ -449,6 +_,7 @@
+                 Tesselator tesselator = Tesselator.getInstance();
                  BufferBuilder bufferbuilder = particlerendertype.begin(tesselator, this.textureManager);
                  if (bufferbuilder != null) {
                      for (Particle particle : queue) {
@@ -82,7 +81,7 @@
                          try {
                              particle.render(bufferbuilder, p_107340_, p_107341_);
                          } catch (Throwable throwable) {
-@@ -480,7 +_,7 @@
+@@ -475,7 +_,7 @@
      }
  
      public void destroy(BlockPos p_107356_, BlockState p_107357_) {
@@ -91,7 +90,7 @@
              VoxelShape voxelshape = p_107357_.getShape(this.level, p_107356_);
              double d0 = 0.25;
              voxelshape.forAllBoxes(
-@@ -513,6 +_,7 @@
+@@ -508,6 +_,7 @@
                                          p_107357_,
                                          p_107356_
                                      )
@@ -99,7 +98,7 @@
                                  );
                              }
                          }
-@@ -522,6 +_,13 @@
+@@ -517,6 +_,13 @@
          }
      }
  
@@ -113,7 +112,7 @@
      public void crack(BlockPos p_107368_, Direction p_107369_) {
          BlockState blockstate = this.level.getBlockState(p_107368_);
          if (blockstate.getRenderShape() != RenderShape.INVISIBLE && blockstate.shouldSpawnTerrainParticles()) {
-@@ -557,7 +_,7 @@
+@@ -552,7 +_,7 @@
                  d0 = (double)i + aabb.maxX + 0.1F;
              }
  

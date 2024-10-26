@@ -252,13 +252,13 @@ public class ForgeRegistry<V> implements IForgeRegistryInternal<V>, IForgeRegist
     @NotNull
     @Override
     public Optional<Holder<V>> getHolder(ResourceKey<V> key) {
-        return Optional.ofNullable(this.getWrapper()).flatMap(wrapper -> wrapper.getHolder(key));
+        return Optional.ofNullable(this.getWrapper()).flatMap(wrapper -> wrapper.get(key));
     }
 
     @NotNull
     @Override
     public Optional<Holder<V>> getHolder(ResourceLocation location) {
-        return Optional.ofNullable(this.getWrapper()).flatMap(wrapper -> wrapper.getHolder(location));
+        return Optional.ofNullable(this.getWrapper()).flatMap(wrapper -> wrapper.get(location));
     }
 
     @NotNull
@@ -360,6 +360,7 @@ public class ForgeRegistry<V> implements IForgeRegistryInternal<V>, IForgeRegist
     }
 
     int add(int id, ResourceLocation key, V value) {
+        @SuppressWarnings("removal")
         final String owner = ModLoadingContext.get().getActiveNamespace();
         return add(id, key, value, owner);
     }
@@ -497,7 +498,7 @@ public class ForgeRegistry<V> implements IForgeRegistryInternal<V>, IForgeRegist
     }
 
     private Holder.Reference<V> bindDelegate(ResourceKey<V> rkey, V value) {
-        Holder.Reference<V> delegate = delegatesByName.computeIfAbsent(rkey.location(), k -> Holder.Reference.createStandAlone(this.getWrapperOrThrow().holderOwner(), rkey));
+        Holder.Reference<V> delegate = delegatesByName.computeIfAbsent(rkey.location(), k -> Holder.Reference.createStandAlone(this.getWrapperOrThrow(), rkey));
         delegate.bindKey(rkey);
         delegate.bindValue(value);
         delegatesByValue.put(value, delegate);

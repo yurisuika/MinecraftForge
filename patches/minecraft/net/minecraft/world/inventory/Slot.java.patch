@@ -9,7 +9,7 @@
      }
  
      public ItemStack remove(int p_40227_) {
-@@ -158,5 +_,37 @@
+@@ -162,5 +_,37 @@
  
      public boolean isFake() {
          return false;

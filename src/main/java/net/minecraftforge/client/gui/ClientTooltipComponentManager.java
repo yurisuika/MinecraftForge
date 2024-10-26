@@ -21,30 +21,28 @@ import java.util.function.Function;
  * <p>
  * Provides a lookup.
  */
-public final class ClientTooltipComponentManager
-{
+public final class ClientTooltipComponentManager {
     private static ImmutableMap<Class<? extends TooltipComponent>, Function<TooltipComponent, ClientTooltipComponent>> FACTORIES;
 
     /**
      * Creates a client component for the given argument, or null if unsupported.
      */
     @Nullable
-    public static ClientTooltipComponent createClientTooltipComponent(TooltipComponent component)
-    {
+    public static ClientTooltipComponent createClientTooltipComponent(TooltipComponent component) {
         var factory = FACTORIES.get(component.getClass());
-        return factory != null ? factory.apply(component) : null;
+        var ret = factory != null ? factory.apply(component) : null;
+        if (ret == null)
+            throw new IllegalArgumentException("Unknown TooltipComponent");
+        return ret;
     }
 
     @ApiStatus.Internal
-    public static void init()
-    {
+    public static void init() {
         var factories = new HashMap<Class<? extends TooltipComponent>, Function<TooltipComponent, ClientTooltipComponent>>();
         var event = new RegisterClientTooltipComponentFactoriesEvent(factories);
         ModLoader.get().postEventWrapContainerInModOrder(event);
         FACTORIES = ImmutableMap.copyOf(factories);
     }
 
-    private ClientTooltipComponentManager()
-    {
-    }
+    private ClientTooltipComponentManager() { }
 }

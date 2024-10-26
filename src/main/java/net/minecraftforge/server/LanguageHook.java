@@ -25,8 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class LanguageHook
-{
+public class LanguageHook {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Gson GSON = new Gson();
     private static final Pattern PATTERN = Pattern.compile("%(\\d+\\$)?[\\d\\.]*[df]");
@@ -35,26 +34,25 @@ public class LanguageHook
     /**
      * Loads lang files on the server
      */
-    public static void captureLanguageMap(Map<String, String> table)
-    {
+    public static void captureLanguageMap(Map<String, String> table) {
         CAPTURED_TABLES.add(table);
-        if (modTable != null) {
-            CAPTURED_TABLES.forEach(t->t.putAll(modTable));
-        }
+        if (modTable != null)
+            CAPTURED_TABLES.forEach(t -> t.putAll(modTable));
     }
 
     // The below is based on client side net.minecraft.client.resources.Locale code
     private static void loadLocaleData(final List<Resource> allResources) {
-        allResources.forEach(res -> {
-            try {
-                LanguageHook.loadLocaleData(res.open());
-            } catch (IOException ignored) {} // TODO: this should not be ignored -C
-        });
+        for (var res : allResources) {
+            try (var stream = res.open()) {
+                LanguageHook.loadLocaleData(stream);
+            } catch(IOException e) {
+                LOGGER.error("Failed to read locale data from {}", res.toString(), e);
+            }
+        }
     }
 
     private static void loadLocaleData(final InputStream inputstream) {
-        try
-        {
+        try {
             JsonElement jsonelement = GSON.fromJson(new InputStreamReader(inputstream, StandardCharsets.UTF_8), JsonElement.class);
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "strings");
 
@@ -62,9 +60,7 @@ public class LanguageHook
                 String s = PATTERN.matcher(GsonHelper.convertToString(entry.getValue(), entry.getKey())).replaceAll("%$1s");
                 modTable.put(entry.getKey(), s);
             });
-        }
-        finally
-        {
+        } finally {
             IOUtils.closeQuietly(inputstream);
         }
     }
@@ -89,16 +85,13 @@ public class LanguageHook
         final InputStream forge = Thread.currentThread().getContextClassLoader().getResourceAsStream("assets/forge/lang/en_us.json");
         loadLocaleData(mc);
         loadLocaleData(forge);
-        CAPTURED_TABLES.forEach(t->t.putAll(modTable));
+        CAPTURED_TABLES.forEach(t -> t.putAll(modTable));
         ForgeI18n.loadLanguageData(modTable);
     }
 
     static void loadLanguagesOnServer(MinecraftServer server) {
         modTable = new HashMap<>(5000);
-        // Possible multi-language server support?
-        for (String lang : Arrays.asList("en_us")) {
-            loadLanguage(lang, server);
-        }
+        loadLanguage("en_us", server);
         CAPTURED_TABLES.forEach(t->t.putAll(modTable));
         ForgeI18n.loadLanguageData(modTable);
     }

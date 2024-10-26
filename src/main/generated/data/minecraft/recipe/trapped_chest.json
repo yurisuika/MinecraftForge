@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "redstone",
   "ingredients": [
-    {
-      "tag": "c:chests/wooden"
-    },
-    {
-      "item": "minecraft:tripwire_hook"
-    }
+    "#c:chests/wooden",
+    "minecraft:tripwire_hook"
   ],
   "result": {
     "count": 1,

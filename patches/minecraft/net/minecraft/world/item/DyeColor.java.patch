@@ -11,7 +11,7 @@
          this.id = p_41046_;
 @@ -52,6 +_,8 @@
          this.textColor = p_41051_;
-         this.textureDiffuseColor = FastColor.ARGB32.opaque(p_41048_);
+         this.textureDiffuseColor = ARGB.opaque(p_41048_);
          this.fireworkColor = p_41050_;
 +        this.dyesTag = net.minecraft.tags.ItemTags.create("c", "dyes/" + p_41047_);
 +        this.dyedTag = net.minecraft.tags.ItemTags.create("c", "dyed/" + p_41047_);

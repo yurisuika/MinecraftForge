@@ -8,12 +8,11 @@ package net.minecraftforge.debug.gameplay.crafting;
 import java.util.concurrent.CompletableFuture;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
-import net.minecraft.data.recipes.ShapedRecipeBuilder;
-import net.minecraft.data.recipes.ShapelessRecipeBuilder;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.data.recipes.SingleItemRecipeBuilder;
 import net.minecraft.data.tags.ItemTagsProvider;
@@ -47,7 +46,7 @@ import net.minecraftforge.test.BaseTestMod;
 @Mod(ConditionalRecipeTest.MODID)
 public class ConditionalRecipeTest extends BaseTestMod {
     static final String MODID = "conditional_recipe";
-    
+
     public ConditionalRecipeTest(FMLJavaModLoadingContext context) {
         super(context);
     }
@@ -55,7 +54,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
     @SubscribeEvent
     public void gatherData(GatherDataEvent event) {
         var gen = event.getGenerator();
-        gen.addProvider(event.includeServer(), new Recipes(gen.getPackOutput(), event.getLookupProvider()));
+        gen.addProvider(event.includeServer(), new Recipes.Runner(gen.getPackOutput(), event.getLookupProvider()));
         var testBlockTags = new TestBlockTags(gen.getPackOutput(), event.getLookupProvider(), event.getExistingFileHelper());
         gen.addProvider(event.includeServer(), testBlockTags);
         gen.addProvider(event.includeServer(), new TestItemTags(gen.getPackOutput(), event.getLookupProvider(), testBlockTags.contentsGetter(), event.getExistingFileHelper()));
@@ -66,15 +65,15 @@ public class ConditionalRecipeTest extends BaseTestMod {
     }
 
     private static <C extends RecipeInput, T extends Recipe<C>> void assertFalse(GameTestHelper helper, RecipeType<T> type, C container) {
-        var recipe = helper.getLevel().getRecipeManager().getRecipeFor(type, container, helper.getLevel());
+        var recipe = helper.getLevel().recipeAccess().getRecipeFor(type, container, helper.getLevel());
         helper.assertTrue(recipe.isEmpty(), () -> "Found crafting recipe when unexpected: " + recipe.get().id());
         helper.succeed();
     }
 
     private static <C extends RecipeInput, T extends Recipe<C>> void assertTrue(GameTestHelper helper, RecipeType<T> type, C container) {
-        var recipe = helper.getLevel().getRecipeManager().getRecipeFor(type, container, helper.getLevel());
+        var recipe = helper.getLevel().recipeAccess().getRecipeFor(type, container, helper.getLevel());
         helper.assertTrue(recipe.isPresent(), "Did not find crafting recipe when expected!");
-        helper.assertTrue(recipe.get().id().getNamespace().equals(MODID), "It wasn't our recipe: " + recipe.get().id());
+        helper.assertTrue(recipe.get().id().location().getNamespace().equals(MODID), "It wasn't our recipe: " + recipe.get().id());
         helper.succeed();
     }
 
@@ -157,7 +156,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
             .build()
         );
     }
-    
+
     @GameTest(template = "forge:empty3x3x3")
     public static void tag_empty_condition_with_populated_tag(GameTestHelper helper) {
         assertFalse(helper, RecipeType.CRAFTING, SimpleCraftingContainer.builder()
@@ -166,7 +165,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
             .build()
         );
     }
-    
+
     @GameTest(template = "forge:empty3x3x3")
     public static void tag_empty_condition_with_empty_tag(GameTestHelper helper) {
         assertTrue(helper, RecipeType.CRAFTING, SimpleCraftingContainer.builder()
@@ -175,7 +174,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
             .build()
         );
     }
-    
+
     public static class TestBlockTags extends BlockTagsProvider {
         public TestBlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, ExistingFileHelper existingFileHelper) {
             super(output, lookupProvider, MODID, existingFileHelper);
@@ -186,7 +185,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
             // No block tags needed; just need a block provider content-getter to supply to the item tags generator
         }
     }
-    
+
     public static class TestItemTags extends ItemTagsProvider {
         public TestItemTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, CompletableFuture<TagLookup<Block>> blockTagProvider, ExistingFileHelper existingFileHelper) {
             super(output, lookupProvider, blockTagProvider, MODID, existingFileHelper);
@@ -200,12 +199,12 @@ public class ConditionalRecipeTest extends BaseTestMod {
     }
 
     public static class Recipes extends RecipeProvider implements IConditionBuilder {
-        public Recipes(PackOutput gen, CompletableFuture<HolderLookup.Provider> lookup) {
-            super(gen, lookup);
+        public Recipes(HolderLookup.Provider lookup, RecipeOutput gen) {
+            super(lookup, gen);
         }
 
         @Override
-        protected void buildRecipes(RecipeOutput out) {
+        protected void buildRecipes() {
             // TODO: Move this to a Condition test instead of using recipe encoders.
             ConditionalRecipe.builder()
                 .condition(
@@ -220,7 +219,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                     )
                 )
                 .recipe(
-                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .pattern("XXX")
                         .pattern("XXX")
                         .pattern("XXX")
@@ -228,12 +227,12 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.DIRT), has(Blocks.DIRT))
                         ::save
                 )
-                .save(out, rl("test_encode_all_conditions"));
+                .save(this.output, rl("test_encode_all_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(FALSE())
                 .recipe(
-                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .pattern("XXX")
                         .pattern("XXX")
                         .pattern("XXX")
@@ -241,12 +240,12 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.DIRT), has(Blocks.DIRT))
                         ::save
                 )
-                .save(out, rl("shaped_false_conditions"));
+                .save(this.output, rl("shaped_false_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(TRUE())
                 .recipe(
-                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .pattern("XXX")
                         .pattern("XXX")
                         .pattern("XXX")
@@ -254,24 +253,24 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.OAK_LOG), has(Blocks.OAK_LOG))
                         ::save
                 )
-                .save(out, rl("shaped_true_conditions"));
+                .save(this.output, rl("shaped_true_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(FALSE())
                 .recipe(
-                    ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
+                    shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
                         .requires(Blocks.REDSTONE_ORE)
                         .requires(Blocks.REDSTONE_ORE)
                         .requires(Blocks.REDSTONE_ORE)
                         .unlockedBy(getHasName(Blocks.REDSTONE_ORE), has(Blocks.REDSTONE_ORE))
                         ::save
                 )
-                .save(out, rl("shapeless_false_conditions"));
+                .save(this.output, rl("shapeless_false_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(TRUE())
                 .recipe(
-                    ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
+                    shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
                         .requires(Blocks.REDSTONE_ORE)
                         .requires(Blocks.REDSTONE_ORE)
                         .requires(Blocks.REDSTONE_ORE)
@@ -279,7 +278,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.REDSTONE_ORE), has(Blocks.REDSTONE_ORE))
                         ::save
                 )
-                .save(out, rl("shapeless_true_conditions"));
+                .save(this.output, rl("shapeless_true_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(FALSE())
@@ -288,7 +287,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.DIRT), has(Blocks.DIRT))
                         ::save
                 )
-                .save(out, rl("cooking_false_conditions"));
+                .save(this.output, rl("cooking_false_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(TRUE())
@@ -297,7 +296,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.BEE_NEST), has(Blocks.BEE_NEST))
                         ::save
                 )
-                .save(out, rl("cooking_true_conditions"));
+                .save(this.output, rl("cooking_true_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(FALSE())
@@ -306,7 +305,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                         .unlockedBy(getHasName(Blocks.DIRT), has(Blocks.DIRT))
                         ::save
                 )
-                .save(out, rl("single_item_false_conditions"));
+                .save(this.output, rl("single_item_false_conditions"));
 
             ConditionalRecipe.builder()
                 .condition(TRUE())
@@ -315,7 +314,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                     .unlockedBy(getHasName(Blocks.REDSTONE_ORE), has(Blocks.REDSTONE_ORE))
                     ::save
                 )
-                .save(out, rl("singe_item_true_conditions"));
+                .save(this.output, rl("singe_item_true_conditions"));
 
             // TODO SmithingTransformRecipeBuilder
             // TODO SmithingTrimRecipeBuilder
@@ -324,7 +323,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
             ConditionalRecipe.builder()
                 .condition(FALSE())
                 .recipe(
-                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .pattern("XXX")
                         .pattern("XX ")
                         .define('X', Blocks.DIRT)
@@ -333,48 +332,64 @@ public class ConditionalRecipeTest extends BaseTestMod {
                 )
                 .condition(TRUE())
                 .recipe(
-                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shaped(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .pattern("XXX")
                         .pattern("XX ")
                         .define('X', Blocks.OAK_LOG)
                         .unlockedBy(getHasName(Blocks.OAK_LOG), has(Blocks.OAK_LOG))
                         ::save
                 )
-                .save(out, rl("conditional_recipe_choice"));
+                .save(this.output, rl("conditional_recipe_choice"));
 
             ConditionalRecipe.builder()
                 .condition(FALSE())
                 .recipe(
-                    ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
+                    shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK, 64)
                         .requires(Blocks.DIRT)
                         .unlockedBy(getHasName(Blocks.DIRT), has(Blocks.DIRT))
                         ::save
                 )
-                .save(out, rl("conditional_doesnt_load_empty"));
+                .save(this.output, rl("conditional_doesnt_load_empty"));
 
             ConditionalRecipe.builder()
                 .condition(tagEmpty(ItemTags.DIRT))
                 .recipe(
-                    ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
+                    shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
                         .requires(Blocks.IRON_ORE)
                         .requires(Blocks.IRON_ORE)
                         .requires(Blocks.IRON_ORE)
                         .unlockedBy(getHasName(Blocks.IRON_ORE), has(Blocks.IRON_ORE))
                         ::save
                 )
-                .save(out, rl("tag_empty_condition_doesnt_load"));
+                .save(this.output, rl("tag_empty_condition_doesnt_load"));
 
             ConditionalRecipe.builder()
                 .condition(tagEmpty(Tags.Items.EGGS))
                 .recipe(
-                    ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
+                    shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
                         .requires(Blocks.GOLD_ORE)
                         .requires(Blocks.GOLD_ORE)
                         .requires(Blocks.GOLD_ORE)
                         .unlockedBy(getHasName(Blocks.GOLD_ORE), has(Blocks.GOLD_ORE))
                         ::save
                 )
-                .save(out, rl("tag_empty_condition_loads"));
+                .save(this.output, rl("tag_empty_condition_loads"));
+        }
+
+        public static class Runner extends RecipeProvider.Runner {
+            protected Runner(PackOutput output, CompletableFuture<Provider> registries) {
+                super(output, registries);
+            }
+
+            @Override
+            public String getName() {
+                return ConditionalRecipeTest.class.getSimpleName() + "-Recipes";
+            }
+
+            @Override
+            protected RecipeProvider createRecipeProvider(Provider registries, RecipeOutput output) {
+                return new Recipes(registries, output);
+            }
         }
     }
 

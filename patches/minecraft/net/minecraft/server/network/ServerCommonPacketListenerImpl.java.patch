@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-@@ -83,6 +_,7 @@
+@@ -90,6 +_,7 @@
  
      @Override
      public void handleCustomPayload(ServerboundCustomPayloadPacket p_300164_) {
@@ -8,7 +8,7 @@
      }
  
      @Override
-@@ -186,5 +_,9 @@
+@@ -193,5 +_,9 @@
  
      protected CommonListenerCookie createCookie(ClientInformation p_297318_) {
          return new CommonListenerCookie(this.playerProfile(), this.latency, p_297318_, this.transferred);

@@ -37,6 +37,6 @@ public interface IForgeResourceKey<T> {
      */
     default Holder<T> getOrThrow(RegistryAccess registryAccess) {
         Objects.requireNonNull(registryAccess, "registryAccess was null");
-        return registryAccess.registryOrThrow(self().registryKey()).getHolderOrThrow(self());
+        return registryAccess.lookupOrThrow(self().registryKey()).getOrThrow(self());
     }
 }

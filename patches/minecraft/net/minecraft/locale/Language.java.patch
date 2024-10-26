@@ -1,16 +1,16 @@
 --- a/net/minecraft/locale/Language.java
 +++ b/net/minecraft/locale/Language.java
-@@ -37,7 +_,8 @@
-         Builder<String, String> builder = ImmutableMap.builder();
-         BiConsumer<String, String> biconsumer = builder::put;
+@@ -38,7 +_,8 @@
+         BiConsumer<String, String> biconsumer = map::put;
          parseTranslations(biconsumer, "/assets/minecraft/lang/en_us.json");
--        final Map<String, String> map = builder.build();
-+        final Map<String, String> map = new java.util.HashMap<>(builder.build());
+         deprecatedtranslationsinfo.applyToMap(map);
+-        final Map<String, String> map1 = Map.copyOf(map);
 +        net.minecraftforge.server.LanguageHook.captureLanguageMap(map);
++        final Map<String, String> map1 = map;
          return new Language() {
              @Override
              public String getOrDefault(String p_128127_, String p_265421_) {
-@@ -62,6 +_,11 @@
+@@ -63,6 +_,11 @@
                          )
                          .isPresent();
              }
@@ -22,7 +22,7 @@
          };
      }
  
-@@ -89,6 +_,8 @@
+@@ -90,6 +_,8 @@
      public static void inject(Language p_128115_) {
          instance = p_128115_;
      }

@@ -6,7 +6,7 @@
 package net.minecraftforge.common.extensions;
 
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
@@ -18,10 +18,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionResult;
@@ -43,22 +41,13 @@ public interface IForgeItemStack {
     }
 
     /**
-     * ItemStack sensitive version of {@link Item#getCraftingRemainingItem()}.
+     * ItemStack sensitive version of {@link Item#getCraftingRemainder()}.
      * Returns a full ItemStack instance of the result.
      *
      * @return The resulting ItemStack
      */
-    default ItemStack getCraftingRemainingItem() {
-        return self().getItem().getCraftingRemainingItem(self());
-    }
-
-    /**
-     * ItemStack sensitive version of {@link Item#hasCraftingRemainingItem()}.
-     *
-     * @return True if this item has a crafting remaining item
-     */
-    default boolean hasCraftingRemainingItem() {
-        return self().getItem().hasCraftingRemainingItem(self());
+    default ItemStack getCraftingRemainder() {
+        return self().getItem().getCraftingRemainder(self());
     }
 
     /**
@@ -137,15 +126,6 @@ public interface IForgeItemStack {
      */
     default boolean canApplyAtEnchantingTable(Enchantment enchantment) {
         return self().getItem().canApplyAtEnchantingTable(self(), enchantment);
-    }
-
-    /**
-     * ItemStack sensitive version of {@link Item#getEnchantmentValue()}.
-     *
-     * @return the enchantment value of this ItemStack
-     */
-    default int getEnchantmentValue() {
-        return self().getItem().getEnchantmentValue(self());
     }
 
     /**
@@ -316,14 +296,14 @@ public interface IForgeItemStack {
     }
 
     /**
-     * Whether this Item can be used to hide player head for enderman.
+     * Whether this Item can be used to hide player from enderman/Creaking.
      *
      * @param player The player watching the enderman
-     * @param endermanEntity The enderman that the player look
+     * @param monster The monster you're trying to hide from
      * @return true if this Item can be used.
      */
-    default boolean isEnderMask(Player player, EnderMan endermanEntity) {
-        return self().getItem().isEnderMask(self(), player, endermanEntity);
+    default boolean isMonsterDisguise(Player player, Monster monster) {
+        return self().getItem().isMonsterDisguise(self(), player, monster);
     }
 
     /**
@@ -404,12 +384,5 @@ public interface IForgeItemStack {
      */
     default boolean canGrindstoneRepair() {
         return self().getItem().canGrindstoneRepair(self());
-    }
-
-    /**
-     * ItemStack and Slot sensitive version of {@link Item#getItemAttributeModifiers}
-     */
-    default ItemAttributeModifiers getDefaultAttributeModifiers() {
-        return self().getItem().getDefaultAttributeModifiers(self());
     }
 }

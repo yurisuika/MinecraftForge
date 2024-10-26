@@ -13,7 +13,7 @@
          float f = (float)(i >> 16 & 0xFF) / 255.0F;
          float f1 = (float)(i >> 8 & 0xFF) / 255.0F;
          float f2 = (float)(i & 0xFF) / 255.0F;
-@@ -181,15 +_,15 @@
+@@ -180,15 +_,15 @@
                  float f57 = f4 * f;
                  float f29 = f4 * f1;
                  float f30 = f4 * f2;
@@ -37,7 +37,7 @@
                  }
              }
  
-@@ -202,10 +_,10 @@
+@@ -201,10 +_,10 @@
                  float f46 = f3 * f;
                  float f48 = f3 * f1;
                  float f50 = f3 * f2;
@@ -52,8 +52,8 @@
              }
  
              int j = this.getLightColor(p_234370_, p_234371_);
-@@ -259,10 +_,9 @@
-                 if (flag7 && !isFaceOccludedByNeighbor(p_234370_, p_234371_, direction, Math.max(f44, f45), p_234370_.getBlockState(p_234371_.relative(direction)))) {
+@@ -258,10 +_,9 @@
+                 if (flag7 && !isFaceOccludedByNeighbor(direction, Math.max(f44, f45), p_234370_.getBlockState(p_234371_.relative(direction)))) {
                      BlockPos blockpos = p_234371_.relative(direction);
                      TextureAtlasSprite textureatlassprite2 = atextureatlassprite[1];
 -                    if (!flag) {
@@ -66,7 +66,7 @@
                          }
                      }
  
-@@ -275,15 +_,15 @@
+@@ -274,15 +_,15 @@
                      float f33 = f4 * f32 * f;
                      float f34 = f4 * f32 * f1;
                      float f35 = f4 * f32 * f2;
@@ -90,7 +90,7 @@
                      }
                  }
              }
-@@ -345,10 +_,11 @@
+@@ -344,10 +_,11 @@
          float p_343128_,
          float p_344448_,
          float p_344284_,

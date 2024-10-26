@@ -8,12 +8,13 @@ package net.minecraftforge.debug.gameplay.crafting;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
@@ -23,6 +24,7 @@ import net.minecraft.data.tags.ItemTagsProvider;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
@@ -72,7 +74,7 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
         var blockTags = new BlockTagsGen(out, look, exist);
         gen.addProvider(event.includeServer(), blockTags);
         gen.addProvider(event.includeServer(), new ItemTagsGen(out, look, blockTags, exist));
-        gen.addProvider(event.includeServer(), new Recipes(out, event.getLookupProvider()));
+        gen.addProvider(event.includeServer(), new Recipes.Runner(out, event.getLookupProvider()));
     }
 
     private static ResourceLocation rl(String path) {
@@ -84,16 +86,16 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
     }
 
     private static <C extends RecipeInput, T extends Recipe<C>> void assertRecipeMiss(GameTestHelper helper, RecipeType<T> type, C container) {
-        var recipe = helper.getLevel().getRecipeManager().getRecipeFor(type, container, helper.getLevel());
+        var recipe = helper.getLevel().recipeAccess().getRecipeFor(type, container, helper.getLevel());
         helper.assertTrue(recipe.isEmpty(), () -> "Found crafting recipe when unexpected: " + recipe.get().id());
         helper.succeed();
     }
 
     private static <C extends RecipeInput, T extends Recipe<C>> void assertRecipeMatch(GameTestHelper helper, RecipeType<T> type, C container, String name) {
-        var recipe = helper.getLevel().getRecipeManager().getRecipeFor(type, container, helper.getLevel());
+        var recipe = helper.getLevel().recipeAccess().getRecipeFor(type, container, helper.getLevel());
         helper.assertTrue(recipe.isPresent(), "Did not find crafting recipe when expected!");
-        helper.assertTrue(recipe.get().id().getNamespace().equals(MODID), "It wasn't our recipe: " + recipe.get().id());
-        helper.assertTrue(recipe.get().id().getPath().equals(name), "It wasn't the correct recipe expected: " + name  + " got: " + recipe.get().id());
+        helper.assertTrue(recipe.get().id().location().getNamespace().equals(MODID), "It wasn't our recipe: " + recipe.get().id());
+        helper.assertTrue(recipe.get().id().location().getPath().equals(name), "It wasn't the correct recipe expected: " + name  + " got: " + recipe.get().id());
         helper.succeed();
     }
 
@@ -110,6 +112,7 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
             .build();
     }
 
+    @SuppressWarnings("unused")
     private static ItemStack damaged(ItemLike item) {
         return tagged(item, damaged());
     }
@@ -251,19 +254,24 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
         }
     }
 
-    private static class Recipes extends RecipeProvider implements IConditionBuilder, IIngredientBuilder, INBTBuilder{
-        public Recipes(PackOutput gen, CompletableFuture<HolderLookup.Provider> lookup) {
-            super(gen, lookup);
+    private static class Recipes extends RecipeProvider implements IConditionBuilder, IIngredientBuilder, INBTBuilder {
+        public Recipes(HolderLookup.Provider lookup, RecipeOutput gen) {
+            super(lookup, gen);
         }
 
-        private static ShapedRecipeBuilder shaped() {
-            return ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Items.DIRT);
+        private ShapedRecipeBuilder shaped() {
+            return shaped(RecipeCategory.MISC, Items.DIRT);
+        }
+
+        private static ResourceKey<Recipe<?>> rk(String path) {
+            return ResourceKey.create(Registries.RECIPE, rl(path));
         }
 
         @Override
-        protected void buildRecipes(RecipeOutput out) {
+        protected void buildRecipes() {
             var hasName = getHasName(Items.DIRT);
             var has = has(Items.DIRT);
+            var items = this.registries.lookup(Registries.ITEM).get();
 
             // contains NBT match - should match a stone pickaxe that lost 3 durability, regardless of setting its name
             shaped()
@@ -276,7 +284,7 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
                         .build()
                 )
                 .unlockedBy(hasName, has)
-                .save(out, rl("partial_nbt_damage_only"));
+                .save(this.output, rk("partial_nbt_damage_only"));
 
             // contains NBT match - should match a named wood, stone, or iron pickaxe, regardless of damage
             shaped()
@@ -288,7 +296,7 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
                         .build()
                 )
                 .unlockedBy(hasName, has)
-                .save(out, rl("partial_nbt_name_only"));
+                .save(this.output, rk("partial_nbt_name_only"));
 
             // compound - should match named dirt or named oak logs
             shaped()
@@ -299,32 +307,48 @@ public class CustomIngredientsTest extends BaseTestMod implements INBTBuilder {
                    strictNbt(named(Items.OAK_LOG))
                ))
                .unlockedBy(hasName, has)
-               .save(out, rl("compound_ingredient"));
+               .save(this.output, rk("compound_ingredient"));
 
             // strict NBT match - should match an unnamed pickaxe that lost 3 durability
             shaped()
                 .pattern("XXX")
                 .define('X', strictNbt(named(Items.DIAMOND_PICKAXE)))
                 .unlockedBy(hasName, has)
-                .save(out, rl("strict_nbt_ingredient"));
+                .save(this.output, rk("strict_nbt_ingredient"));
 
             // intersection - should match STONE only, [dirt, stone] + [stone, gravel]
             shaped()
                 .pattern("XXX")
                 .pattern("XXX")
                 .pattern(" X ")
-                .define('X', intersection(LEFT, RIGHT))
+                .define('X', intersection(items, LEFT, RIGHT))
                 .unlockedBy(hasName, has)
-                .save(out, rl("intersection_ingredient"));
+                .save(this.output, rk("intersection_ingredient"));
 
             // difference - should match DIRT only, [dirt, stone] - [stone, gravel]
             shaped()
                .pattern(" X ")
                .pattern("XXX")
                .pattern(" X ")
-               .define('X', difference(LEFT, RIGHT))
+               .define('X', difference(items, LEFT, RIGHT))
                .unlockedBy(hasName, has)
-               .save(out, rl("difference_ingredient"));
+               .save(this.output, rk("difference_ingredient"));
+        }
+
+        public static class Runner extends RecipeProvider.Runner {
+            protected Runner(PackOutput output, CompletableFuture<Provider> registries) {
+                super(output, registries);
+            }
+
+            @Override
+            public String getName() {
+                return CustomIngredientsTest.class.getSimpleName() + "-Recipes";
+            }
+
+            @Override
+            protected RecipeProvider createRecipeProvider(Provider registries, RecipeOutput output) {
+                return new Recipes(registries, output);
+            }
         }
     }
 }

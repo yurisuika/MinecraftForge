@@ -24,7 +24,7 @@
                  }
              }
          }
-@@ -193,7 +_,7 @@
+@@ -198,7 +_,7 @@
  
      @Override
      protected float getDestroyProgress(BlockState p_261691_, Player p_262171_, BlockGetter p_261621_, BlockPos p_261500_) {
@@ -33,7 +33,7 @@
      }
  
      protected void growBamboo(BlockState p_261855_, Level p_262076_, BlockPos p_262109_, RandomSource p_261633_, int p_261759_) {
-@@ -240,5 +_,11 @@
+@@ -245,5 +_,11 @@
          }
  
          return i;

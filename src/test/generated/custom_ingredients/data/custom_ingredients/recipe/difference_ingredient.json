@@ -4,12 +4,8 @@
   "key": {
     "X": {
       "type": "forge:difference",
-      "base": {
-        "tag": "custom_ingredients:left"
-      },
-      "subtracted": {
-        "tag": "custom_ingredients:right"
-      }
+      "base": "#custom_ingredients:left",
+      "subtracted": "#custom_ingredients:right"
     }
   },
   "pattern": [

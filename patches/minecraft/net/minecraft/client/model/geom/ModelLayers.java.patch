@@ -1,12 +1,18 @@
 --- a/net/minecraft/client/model/geom/ModelLayers.java
 +++ b/net/minecraft/client/model/geom/ModelLayers.java
-@@ -229,11 +_,13 @@
+@@ -301,15 +_,18 @@
      }
  
-     public static ModelLayerLocation createSignModelName(WoodType p_171292_) {
--        return createLocation("sign/" + p_171292_.name(), "main");
+     public static ModelLayerLocation createStandingSignModelName(WoodType p_171292_) {
+-        return createLocation("sign/standing/" + p_171292_.name(), "main");
 +        ResourceLocation location = ResourceLocation.parse(p_171292_.name());
-+        return new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(location.getNamespace(), "sign/" + location.getPath()), "main");
++        return new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(location.getNamespace(), "sign/standing/" + location.getPath()), "main");
+     }
+ 
+     public static ModelLayerLocation createWallSignModelName(WoodType p_363532_) {
+-        return createLocation("sign/wall/" + p_363532_.name(), "main");
++        ResourceLocation location = ResourceLocation.parse(p_363532_.name());
++        return new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(location.getNamespace(), "sign/wall/" + location.getPath()), "main");
      }
  
      public static ModelLayerLocation createHangingSignModelName(WoodType p_252225_) {

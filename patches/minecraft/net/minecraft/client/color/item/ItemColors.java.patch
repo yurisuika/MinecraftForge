@@ -10,8 +10,8 @@
  
      public static ItemColors createDefault(BlockColors p_92684_) {
          ItemColors itemcolors = new ItemColors();
-@@ -105,17 +_,20 @@
-                     : FastColor.ARGB32.opaque(p_325310_.getOrDefault(DataComponents.MAP_COLOR, MapItemColor.DEFAULT).rgb()),
+@@ -101,17 +_,20 @@
+             (p_357654_, p_357655_) -> p_357655_ == 0 ? -1 : ARGB.opaque(p_357654_.getOrDefault(DataComponents.MAP_COLOR, MapItemColor.DEFAULT).rgb()),
              Items.FILLED_MAP
          );
 +        net.minecraftforge.client.ForgeHooksClient.onItemColorsInit(itemcolors, p_92684_);

@@ -1,15 +1,15 @@
 --- a/net/minecraft/stats/RecipeBookSettings.java
 +++ b/net/minecraft/stats/RecipeBookSettings.java
-@@ -11,7 +_,7 @@
- import net.minecraft.world.inventory.RecipeBookType;
- 
- public final class RecipeBookSettings {
+@@ -14,7 +_,7 @@
+     public static final StreamCodec<FriendlyByteBuf, RecipeBookSettings> STREAM_CODEC = StreamCodec.ofMember(
+         RecipeBookSettings::write, RecipeBookSettings::read
+     );
 -    private static final Map<RecipeBookType, Pair<String, String>> TAG_FIELDS = ImmutableMap.of(
 +    private static final Map<RecipeBookType, Pair<String, String>> TAG_FIELDS = new java.util.HashMap<>(ImmutableMap.of(
          RecipeBookType.CRAFTING,
          Pair.of("isGuiOpen", "isFilteringCraftable"),
          RecipeBookType.FURNACE,
-@@ -20,7 +_,7 @@
+@@ -23,7 +_,7 @@
          Pair.of("isBlastingFurnaceGuiOpen", "isBlastingFurnaceFilteringCraftable"),
          RecipeBookType.SMOKER,
          Pair.of("isSmokerGuiOpen", "isSmokerFilteringCraftable")
@@ -18,9 +18,9 @@
      private final Map<RecipeBookType, RecipeBookSettings.TypeSettings> states;
  
      private RecipeBookSettings(Map<RecipeBookType, RecipeBookSettings.TypeSettings> p_12730_) {
-@@ -158,5 +_,10 @@
-         public String toString() {
-             return "[open=" + this.open + ", filtering=" + this.filtering + "]";
+@@ -146,5 +_,10 @@
+         public RecipeBookSettings.TypeSettings setFiltering(boolean p_366242_) {
+             return new RecipeBookSettings.TypeSettings(this.open, p_366242_);
          }
 +    }
 +

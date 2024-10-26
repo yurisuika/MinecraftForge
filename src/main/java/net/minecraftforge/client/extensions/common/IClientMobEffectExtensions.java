@@ -7,7 +7,7 @@ package net.minecraftforge.client.extensions.common;
 
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.EffectsInInventory;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.fml.LogicalSide;
@@ -53,14 +53,14 @@ public interface IClientMobEffectExtensions {
      * This can be used to render icons from your own texture sheet.
      *
      * @param instance     The effect instance
-     * @param screen       The effect-rendering screen
+     * @param effects       The effect-rendering screen
      * @param guiGraphics  The gui graphics
      * @param x            The x coordinate
      * @param y            The y coordinate
      * @param blitOffset   The blit offset
      * @return true to prevent default rendering, false otherwise
      */
-    default boolean renderInventoryIcon(MobEffectInstance instance, EffectRenderingInventoryScreen<?> screen, GuiGraphics guiGraphics, int x, int y, int blitOffset) {
+    default boolean renderInventoryIcon(MobEffectInstance instance, EffectsInInventory effects, GuiGraphics guiGraphics, int x, int y, int blitOffset) {
         return false;
     }
 
@@ -68,14 +68,14 @@ public interface IClientMobEffectExtensions {
      * Renders the text of the specified effect in the player's inventory.
      *
      * @param instance     The effect instance
-     * @param screen       The effect-rendering screen
+     * @param effects       The effect-rendering screen
      * @param guiGraphics  The gui graphics
      * @param x            The x coordinate
      * @param y            The y coordinate
      * @param blitOffset   The blit offset
      * @return true to prevent default rendering, false otherwise
      */
-    default boolean renderInventoryText(MobEffectInstance instance, EffectRenderingInventoryScreen<?> screen, GuiGraphics guiGraphics, int x, int y, int blitOffset) {
+    default boolean renderInventoryText(MobEffectInstance instance, EffectsInInventory effects, GuiGraphics guiGraphics, int x, int y, int blitOffset) {
         return false;
     }
 

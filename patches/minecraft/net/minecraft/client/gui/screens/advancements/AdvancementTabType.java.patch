@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/gui/screens/advancements/AdvancementTabType.java
 +++ b/net/minecraft/client/gui/screens/advancements/AdvancementTabType.java
-@@ -69,6 +_,7 @@
+@@ -70,6 +_,7 @@
          5
      );
  

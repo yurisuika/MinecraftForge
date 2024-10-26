@@ -11,7 +11,7 @@ import java.util.function.BiPredicate;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.AbstractBoat;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.Entity;
@@ -19,6 +19,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.level.material.FluidState;
@@ -115,7 +116,7 @@ public interface IForgeEntity extends ICapabilitySerializable<CompoundTag> {
      * @param fallDistance The fall distance
      * @return {@code true} if this entity can trample, {@code false} otherwise
      */
-    boolean canTrample(BlockState state, BlockPos pos, float fallDistance);
+    boolean canTrample(ServerLevel level, BlockState state, BlockPos pos, float fallDistance);
 
     /**
      * Returns The classification of this entity
@@ -381,13 +382,13 @@ public interface IForgeEntity extends ICapabilitySerializable<CompoundTag> {
 
     /**
      * When {@code false}, the fluid will no longer update its height value while
-     * within a boat while it is not within a fluid ({@link Boat#isUnderWater()}.
+     * within a boat while it is not within a fluid ({@link AbstractBoat#isUnderWater()}.
      *
      * @param state the state of the fluid the rider is within
      * @param boat the boat the rider is within that is not inside a fluid
      * @return {@code true} if the fluid height should be updated, {@code false} otherwise
      */
-    default boolean shouldUpdateFluidWhileBoating(FluidState state, Boat boat) {
+    default boolean shouldUpdateFluidWhileBoating(FluidState state, AbstractBoat boat) {
         return boat.shouldUpdateFluidWhileRiding(state, self());
     }
 }

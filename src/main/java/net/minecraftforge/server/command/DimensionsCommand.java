@@ -22,15 +22,13 @@ import java.util.stream.Collectors;
 
 import com.mojang.brigadier.builder.ArgumentBuilder;
 
-class DimensionsCommand
-{
-    static ArgumentBuilder<CommandSourceStack, ?> register()
-    {
+class DimensionsCommand {
+    static ArgumentBuilder<CommandSourceStack, ?> register() {
         return Commands.literal("dimensions")
             .requires(cs->cs.hasPermission(0)) //permission
             .executes(ctx -> {
                 ctx.getSource().sendSuccess(() -> Component.translatable("commands.forge.dimensions.list"), true);
-                final Registry<DimensionType> reg = ctx.getSource().registryAccess().registryOrThrow(Registries.DIMENSION_TYPE);
+                final Registry<DimensionType> reg = ctx.getSource().registryAccess().lookupOrThrow(Registries.DIMENSION_TYPE);
 
                 Map<ResourceLocation, List<ResourceLocation>> types = new HashMap<>();
                 for (ServerLevel dim : ctx.getSource().getServer().getAllLevels()) {

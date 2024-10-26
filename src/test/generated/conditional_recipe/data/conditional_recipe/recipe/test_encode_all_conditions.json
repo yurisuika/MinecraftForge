@@ -37,9 +37,7 @@
         "type": "minecraft:crafting_shaped",
         "category": "misc",
         "key": {
-          "X": {
-            "item": "minecraft:dirt"
-          }
+          "X": "minecraft:dirt"
         },
         "pattern": [
           "XXX",

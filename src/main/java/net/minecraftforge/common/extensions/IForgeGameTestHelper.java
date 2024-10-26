@@ -50,6 +50,7 @@ public interface IForgeGameTestHelper {
            }
         };
         var connection = new Connection(PacketFlow.SERVERBOUND);
+        @SuppressWarnings("unused") // The constructor has side effects
         var channel = new EmbeddedChannel(connection);
         var server = level.getServer();
 

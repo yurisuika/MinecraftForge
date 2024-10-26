@@ -5,10 +5,9 @@
 
 package net.minecraftforge.registries;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Lifecycle;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -16,6 +15,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.Util;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.RegistrationInfo;
@@ -23,7 +23,9 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.tags.TagLoader;
 import net.minecraft.util.RandomSource;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -59,6 +61,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     private final RegistryManager stage;
     private volatile Map<TagKey<T>, HolderSet.Named<T>> tags = new IdentityHashMap<>();
     private final Map<ResourceKey<T>, RegistrationInfo> registrationInfos = new IdentityHashMap<>();
+    private MappedRegistry.TagSet<T> frozenTags = MappedRegistry.TagSet.unbound();
 
     NamespacedWrapper(ForgeRegistry<T> fowner, Function<T, Holder.Reference<T>> intrusiveHolderCallback, RegistryManager stage) {
         super(fowner.getRegistryKey(), Lifecycle.stable(), intrusiveHolderCallback != null);
@@ -86,7 +89,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     // Reading Functions
     @Override
     @Nullable
-    public T get(@Nullable ResourceLocation name) {
+    public T getValue(@Nullable ResourceLocation name) {
         return this.delegate.getRaw(name); //get without default
     }
 
@@ -97,7 +100,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
 
     @Override
     @Nullable
-    public T get(@Nullable ResourceKey<T> name) {
+    public T getValue(@Nullable ResourceKey<T> name) {
         return name == null ? null : this.delegate.getRaw(name.location()); //get without default
     }
 
@@ -178,13 +181,18 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     }
 
     @Override
-    public Optional<Holder.Reference<T>> getHolder(int id) {
+    public Optional<Holder.Reference<T>> get(int id) {
         return id >= 0 && id < this.holdersById.size() ? Optional.ofNullable(this.holdersById.get(id)) : Optional.empty();
     }
 
     @Override
-    public Optional<Holder.Reference<T>> getHolder(ResourceKey<T> key) {
+    public Optional<Holder.Reference<T>> get(ResourceKey<T> key) {
         return Optional.ofNullable(this.holdersByName.get(key.location()));
+    }
+
+    @Override
+    public Optional<Holder.Reference<T>> get(ResourceLocation p_333710_) {
+        return Optional.ofNullable(this.holdersByName.get(p_333710_));
     }
 
     @Override
@@ -223,7 +231,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
             }
 
             public HolderSet.Named<T> getOrThrow(TagKey<T> key) {
-                return NamespacedWrapper.this.getOrCreateTag(key);
+                return NamespacedWrapper.this.getOrCreateTagForRegistration(key);
             }
         };
     }
@@ -244,7 +252,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
                 throw new IllegalStateException("This registry can't create new holders without value");
             } else {
                 this.validateWrite(key);
-                return Holder.Reference.createStandAlone(this.holderOwner(), key);
+                return Holder.Reference.createStandAlone(this, key);
             }
         });
     }
@@ -255,41 +263,36 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     }
 
     @Override
-    public Stream<Holder.Reference<T>> holders() {
+    public Stream<Holder.Reference<T>> listElements() {
         return this.getSortedHolders().stream();
     }
 
     @Override
-    public Stream<Pair<TagKey<T>, HolderSet.Named<T>>> getTags() {
-        return this.tags.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
+    public Stream<HolderSet.Named<T>> getTags() {
+        return this.frozenTags.getTags();
     }
 
     @Override
-    public HolderSet.Named<T> getOrCreateTag(TagKey<T> name) {
-        HolderSet.Named<T> named = this.tags.get(name);
-        if (named == null) {
-            named = createTag(name);
-            // They use volatile and set it this way to not have the performance penalties of synced read access. But this makes a lot of new maps.. We need to look into performance alternatives.
-            Map<TagKey<T>, HolderSet.Named<T>> map = new IdentityHashMap<>(this.tags);
-            map.put(name, named);
-            this.tags = map;
-        }
-
-        return named;
+    public HolderSet.Named<T> getOrCreateTagForRegistration(TagKey<T> name) {
+        return this.tags.computeIfAbsent(name, this::createTag);
     }
 
     void addOptionalTag(TagKey<T> name, @NotNull Set<? extends Supplier<T>> defaults) {
         this.optionalTags.putAll(name, defaults);
     }
 
+    /*
     @Override
     public Stream<TagKey<T>> getTagNames() {
         return this.tags.keySet().stream();
     }
+    */
 
-    //TODO: Move this to ValidateCallback?
     @Override
     public Registry<T> freeze() {
+        if (frozen) // vanilla calls freeze on frozen registries all the time. which makes things annoying
+            return this;
+
         this.frozen = true;
         List<ResourceLocation> unregistered = this.holdersByName.entrySet().stream()
                 .filter(e -> !e.getValue().isBound())
@@ -302,7 +305,49 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
             throw new IllegalStateException("Some intrusive holders were not registered: " + this.unregisteredIntrusiveHolders.values() + " Hint: Did you register all your registry objects? Registry stage: " + stage.getName());
         }
 
+        if (this.frozenTags.isBound())
+            throw new IllegalStateException("Tags already present before freezing");
+
+        var unbound = this.tags.entrySet().stream()
+            .filter(t -> !t.getValue().isBound())
+            .map(t -> t.getKey().location())
+            .sorted()
+            .toList();
+
+        if (!unbound.isEmpty())
+            throw new IllegalStateException("Unbound tags in registry " + this.key() + ": " + unbound);
+
+        this.frozenTags = MappedRegistry.TagSet.fromMap(this.tags);
+        this.refreshTagsInHoldersForge();
         return this;
+    }
+
+    private void refreshTagsInHoldersForge() {
+        Map<Holder.Reference<T>, List<TagKey<T>>> map = new IdentityHashMap<>();
+        for (var value : this.holdersByName.values()) {
+            map.put(value, new ArrayList<>());
+        }
+
+        this.frozenTags.forEach((key, value) -> {
+            for (var holder : value) {
+                var reference = this.validateAndUnwrapTagElement(key, holder);
+                map.get(reference).add(key);
+            }
+        });
+
+        for (var entry : map.entrySet()) {
+            entry.getKey().bindTags(entry.getValue());
+        }
+    }
+
+    private Holder.Reference<T> validateAndUnwrapTagElement(TagKey<T> key, Holder<T> value) {
+        if (!value.canSerializeIn(this))
+            throw new IllegalStateException("Can't create named set " + key + " containing value " + value + " from outside registry " + this);
+
+        if (value instanceof Holder.Reference<T> reference)
+            return reference;
+
+        throw new IllegalStateException("Found direct holder " + value + " value in tag " + key);
     }
 
     @Override
@@ -316,65 +361,98 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     }
 
     @Override
-    public Optional<HolderSet.Named<T>> getTag(TagKey<T> name) {
-        return Optional.ofNullable(this.tags.get(name));
+    public Optional<HolderSet.Named<T>> get(TagKey<T> name) {
+        return this.frozenTags.get(name);
     }
 
     @Override
-    public void bindTags(Map<TagKey<T>, List<Holder<T>>> newTags) {
-        Map<Holder.Reference<T>, List<TagKey<T>>> holderToTag = new IdentityHashMap<>();
-        for (Holder.Reference<T> tReference : this.holdersByName.values()) {
-            holderToTag.put(tReference, new ArrayList<>());
+    public void bindTag(TagKey<T> key, List<Holder<T>> newTags) {
+        this.validateWrite();
+        this.getOrCreateTagForRegistration(key).bind(newTags);
+    }
+
+    @Override
+    public void bindAllTagsToEmpty() {
+        this.validateWrite();
+        for (var tag : this.tags.values())
+            tag.bind(List.of());
+    }
+
+    @Override
+    public Registry.PendingTags<T> prepareTagReload(TagLoader.LoadResult<T> data) {
+        if (!this.frozen)
+            throw new IllegalStateException("Invalid method used for tag loading");
+
+        var _old = ImmutableMap.<TagKey<T>, HolderSet.Named<T>>builder();
+        var _new = ImmutableMap.<TagKey<T>, List<Holder<T>>>builder();
+
+        for (var entry : data.tags().entrySet()) {
+            var key = entry.getKey();
+            var existing = this.tags.get(key);
+            if (existing == null)
+                existing = this.createTag(key);
+            _old.put(key, existing);
+            _new.put(key, List.copyOf(entry.getValue()));
         }
-        newTags.forEach((name, values) -> values.forEach(holder -> addTagToHolder(holderToTag, name, holder)));
 
-        Set<TagKey<T>> set = new HashSet<>(Sets.difference(this.tags.keySet(), newTags.keySet()));
-        set.removeAll(this.optionalTags.keySet());
-        if (!set.isEmpty())
-            LOGGER.warn("Not all defined tags for registry {} are present in data pack: {}", this.key(), set.stream().map(k -> k.location().toString()).sorted()
-                    .collect(Collectors.joining(", \n\t")));
+        var oldBindings = _old.build();
+        var newBindings = _new.build();
 
-        Map<TagKey<T>, HolderSet.Named<T>> tmpTags = new IdentityHashMap<>(this.tags);
-        newTags.forEach((k, v) -> tmpTags.computeIfAbsent(k, this::createTag).bind(v));
-
-        Set<TagKey<T>> defaultedTags = Sets.difference(this.optionalTags.keySet(), newTags.keySet());
-        for (TagKey<T> name : defaultedTags) {
-            List<Holder<T>> defaults = this.optionalTags.get(name).stream()
-                    .map(valueSupplier -> getHolder(valueSupplier.get()).orElse(null))
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-            for (Holder<T> holder : defaults) {
-                addTagToHolder(holderToTag, name, holder);
+        var oldSnapshot = new HolderLookup.RegistryLookup.Delegate<T>() {
+            @Override
+            public HolderLookup.RegistryLookup<T> parent() {
+                return NamespacedWrapper.this;
             }
-            tmpTags.computeIfAbsent(name, this::createTag).bind(defaults);
-        }
 
-        holderToTag.forEach(Holder.Reference::bindTags);
-        this.tags = tmpTags;
+            @Override
+            public Optional<HolderSet.Named<T>> get(TagKey<T> p_259486_) {
+                return Optional.ofNullable(oldBindings.get(p_259486_));
+            }
 
-        this.delegate.onBindTags(this.tags, defaultedTags);
-    }
+            @Override
+            public Stream<HolderSet.Named<T>> listTags() {
+                return oldBindings.values().stream();
+            }
+        };
 
-    private void addTagToHolder(Map<Holder.Reference<T>, List<TagKey<T>>> holderToTag, TagKey<T> name, Holder<T> holder) {
-        if (!holder.canSerializeIn(this.holderOwner()))
-            throw new IllegalStateException("Can't create named set " + name + " containing value " + holder + " from outside registry " + this);
+        return new Registry.PendingTags<T>() {
+            @Override
+            public ResourceKey<? extends Registry<? extends T>> key() {
+                return NamespacedWrapper.this.key();
+            }
 
-        if (!(holder instanceof Holder.Reference<T>))
-            throw new IllegalStateException("Found direct holder " + holder + " value in tag " + name);
+            @Override
+            public int size() {
+                return newBindings.size();
+            }
 
-        holderToTag.get((Holder.Reference<T>) holder).add(name);
-    }
+            @Override
+            public HolderLookup.RegistryLookup<T> lookup() {
+                return oldSnapshot;
+            }
 
-    @Override
-    public void resetTags() {
-        this.tags.values().forEach(t -> t.bind(List.of()));
-        this.holders.values().forEach(v -> v.bindTags(Set.of()));
+            @Override
+            public List<Holder<T>> getPending(TagKey<T> key) {
+                return newBindings.getOrDefault(key, List.of());
+            }
+
+            @Override
+            public void apply() {
+                for (var entry : oldBindings.entrySet()) {
+                    var newList = newBindings.getOrDefault(entry.getKey(), List.of());
+                    entry.getValue().bind(newList);
+                }
+
+                NamespacedWrapper.this.frozenTags = MappedRegistry.TagSet.fromMap(oldBindings);
+                NamespacedWrapper.this.refreshTagsInHoldersForge();
+            }
+        };
     }
 
     @Override
     public void unfreeze() {
         this.frozen = false;
+        this.frozenTags = MappedRegistry.TagSet.unbound();
     }
 
     boolean isFrozen() {
@@ -409,14 +487,14 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
     }
 
     private HolderSet.Named<T> createTag(TagKey<T> name) {
-        return new HolderSet.Named<>(this.holderOwner(), name);
+        return new HolderSet.Named<>(this, name);
     }
 
     private Holder.Reference<T> getHolder(ResourceKey<T> key, T value) {
         if (this.isIntrusive())
             return this.intrusiveHolderCallback.apply(value);
 
-        return this.holdersByName.computeIfAbsent(key.location(), k -> Holder.Reference.createStandAlone(this.holderOwner(), key));
+        return this.holdersByName.computeIfAbsent(key.location(), k -> Holder.Reference.createStandAlone(this, key));
     }
 
     private List<Holder.Reference<T>> getSortedHolders() {

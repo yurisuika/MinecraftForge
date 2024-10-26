@@ -154,4 +154,9 @@ public class NotHolderSet<T> implements ICustomHolderSet<T> {
             runnable.run();
         }
     }
+
+    @Override
+    public boolean isBound() {
+        return this.value.isBound();
+    }
 }

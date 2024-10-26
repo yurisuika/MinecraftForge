@@ -27,47 +27,34 @@ import java.util.List;
 /**
  * Wrapper around {@link ModelBlockRenderer} to allow rendering blocks via Forge's lighting pipeline.
  */
-public class ForgeModelBlockRenderer extends ModelBlockRenderer
-{
+public class ForgeModelBlockRenderer extends ModelBlockRenderer {
     private static final Direction[] SIDES = Direction.values();
 
     private final ThreadLocal<QuadLighter> flatLighter, smoothLighter;
 
-    public ForgeModelBlockRenderer(BlockColors colors)
-    {
+    public ForgeModelBlockRenderer(BlockColors colors) {
         super(colors);
         this.flatLighter = ThreadLocal.withInitial(() -> new FlatQuadLighter(colors));
         this.smoothLighter = ThreadLocal.withInitial(() -> new SmoothQuadLighter(colors));
     }
 
     @Override
-    public void tesselateWithoutAO(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, VertexConsumer vertexConsumer, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType)
-    {
+    public void tesselateWithoutAO(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, VertexConsumer vertexConsumer, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType) {
         if (ForgeConfig.CLIENT.experimentalForgeLightPipelineEnabled.get())
-        {
             render(vertexConsumer, flatLighter.get(), level, model, state, pos, poseStack, checkSides, rand, seed, packedOverlay, modelData, renderType);
-        }
         else
-        {
             super.tesselateWithoutAO(level, model, state, pos, poseStack, vertexConsumer, checkSides, rand, seed, packedOverlay, modelData, renderType);
-        }
     }
 
     @Override
-    public void tesselateWithAO(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, VertexConsumer vertexConsumer, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType)
-    {
+    public void tesselateWithAO(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, VertexConsumer vertexConsumer, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType) {
         if (ForgeConfig.CLIENT.experimentalForgeLightPipelineEnabled.get())
-        {
             render(vertexConsumer, smoothLighter.get(), level, model, state, pos, poseStack, checkSides, rand, seed, packedOverlay, modelData, renderType);
-        }
         else
-        {
             super.tesselateWithAO(level, model, state, pos, poseStack, vertexConsumer, checkSides, rand, seed, packedOverlay, modelData, renderType);
-        }
     }
 
-    public static boolean render(VertexConsumer vertexConsumer, QuadLighter lighter, BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType)
-    {
+    public static boolean render(VertexConsumer vertexConsumer, QuadLighter lighter, BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, PoseStack poseStack, boolean checkSides, RandomSource rand, long seed, int packedOverlay, ModelData modelData, RenderType renderType) {
         ForgeModelBlockRenderer renderer = (ForgeModelBlockRenderer)Minecraft.getInstance().getBlockRenderer().getModelRenderer();
         var pose = poseStack.last();
         var empty = true;
@@ -76,64 +63,53 @@ public class ForgeModelBlockRenderer extends ModelBlockRenderer
 
         rand.setSeed(seed);
         List<BakedQuad> quads = model.getQuads(state, null, rand, modelData, renderType);
-        if (!quads.isEmpty())
-        {
+        if (!quads.isEmpty()) {
             empty = false;
             lighter.setup(level, pos, state);
-            for (BakedQuad quad : quads)
-            {
-                if (smoothLighter && !quad.hasAmbientOcclusion())
-                {
-                    if (flatLighter == null)
-                    {
+            for (BakedQuad quad : quads) {
+                if (smoothLighter && !quad.hasAmbientOcclusion()) {
+                    if (flatLighter == null) {
                         flatLighter = renderer.flatLighter.get();
                         flatLighter.setup(level, pos, state);
                     }
                     flatLighter.process(vertexConsumer, pose, quad, packedOverlay);
-                }
-                else
-                {
+                } else {
                     lighter.process(vertexConsumer, pose, quad, packedOverlay);
                 }
             }
         }
+        var mutable = pos.mutable();
 
-        for (Direction side : SIDES)
-        {
-            if (checkSides && !Block.shouldRenderFace(state, level, pos, side, pos.relative(side)))
-            {
+        for (Direction side : SIDES) {
+            mutable.setWithOffset(pos, side);
+            if (checkSides && !Block.shouldRenderFace(level, pos, state, level.getBlockState(mutable), side))
                 continue;
-            }
             rand.setSeed(seed);
             quads = model.getQuads(state, side, rand, modelData, renderType);
-            if (!quads.isEmpty())
-            {
-                if (empty)
-                {
+            if (!quads.isEmpty()) {
+                if (empty) {
                     empty = false;
                     lighter.setup(level, pos, state);
                 }
-                for (BakedQuad quad : quads)
-                {
-                    if (smoothLighter && !quad.hasAmbientOcclusion())
-                    {
-                        if (flatLighter == null)
-                        {
+
+                for (BakedQuad quad : quads) {
+                    if (smoothLighter && !quad.hasAmbientOcclusion()) {
+                        if (flatLighter == null) {
                             flatLighter = renderer.flatLighter.get();
                             flatLighter.setup(level, pos, state);
                         }
                         flatLighter.process(vertexConsumer, pose, quad, packedOverlay);
-                    }
-                    else
-                    {
+                    } else {
                         lighter.process(vertexConsumer, pose, quad, packedOverlay);
                     }
                 }
             }
         }
+
         lighter.reset();
         if (flatLighter != null)
             flatLighter.reset();
+
         return !empty;
     }
 }

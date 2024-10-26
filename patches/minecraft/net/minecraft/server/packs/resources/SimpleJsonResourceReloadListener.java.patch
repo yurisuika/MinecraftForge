@@ -1,11 +1,27 @@
 --- a/net/minecraft/server/packs/resources/SimpleJsonResourceReloadListener.java
 +++ b/net/minecraft/server/packs/resources/SimpleJsonResourceReloadListener.java
-@@ -49,4 +_,8 @@
+@@ -55,7 +_,13 @@
+             ResourceLocation resourcelocation1 = filetoidconverter.fileToId(resourcelocation);
+ 
+             try (Reader reader = entry.getValue().openAsReader()) {
+-                p_368755_.parse(p_369854_, JsonParser.parseReader(reader)).ifSuccess(p_370131_ -> {
++                var json = JsonParser.parseReader(reader);
++                json = net.minecraftforge.common.ForgeHooks.readConditional(p_369854_, json);
++                if (json == null) {
++                    LOGGER.debug("Skipping loading {} as its conditions were not met", resourcelocation);
++                    continue;
++                }
++                p_368755_.parse(p_369854_, json).ifSuccess(p_370131_ -> {
+                     if (p_279404_.putIfAbsent(resourcelocation1, (T)p_370131_) != null) {
+                         throw new IllegalStateException("Duplicate data file ignored with ID " + resourcelocation1);
+                     }
+@@ -64,5 +_,9 @@
+                 LOGGER.error("Couldn't parse data file '{}' from '{}'", resourcelocation1, resourcelocation, jsonparseexception);
              }
          }
-     }
++    }
 +
 +    protected ResourceLocation getPreparedPath(ResourceLocation rl) {
 +        return rl.withPath(this.directory + "/" + rl.getPath() + ".json");
-+    }
+     }
  }

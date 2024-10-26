@@ -1,16 +1,16 @@
 --- a/net/minecraft/world/level/storage/loot/LootDataType.java
 +++ b/net/minecraft/world/level/storage/loot/LootDataType.java
-@@ -30,7 +_,12 @@
-         DataResult<T> dataresult = this.codec.parse(p_335939_, p_327740_);
-         dataresult.error()
-             .ifPresent(p_341974_ -> LOGGER.error("Couldn't parse element {}/{} - {}", this.registryKey.location(), p_279253_, p_341974_.message()));
--        return dataresult.result();
-+        var ret = dataresult.result();
-+        if (ret.orElse(null) instanceof LootTable table) {
-+            table.setLootTableId(p_279253_);
-+            ret = Optional.ofNullable((T)net.minecraftforge.event.ForgeEventFactory.onLoadLootTable(p_279253_, table));
-+        }
-+        return ret;
+@@ -29,9 +_,12 @@
      }
  
-     public static Stream<LootDataType<?>> values() {
+     private static LootDataType.Validator<LootTable> createLootTableValidator() {
+-        return (p_327551_, p_327552_, p_327553_) -> p_327553_.validate(
++        return (p_327551_, p_327552_, p_327553_) -> {
++            p_327553_.setLootTableId(p_327552_.location());
++            p_327553_.validate(
+                 p_327551_.setContextKeySet(p_327553_.getParamSet()).enterElement("{" + p_327552_.registry() + "/" + p_327552_.location() + "}", p_327552_)
+             );
++        };
+     }
+ 
+     @FunctionalInterface

@@ -14,8 +14,8 @@ import com.mojang.serialization.MapCodec;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraft.world.level.storage.loot.predicates.LootItemConditions;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,7 +49,7 @@ public interface IGlobalLootModifier {
      * @return modified loot drops
      */
     @NotNull
-    ObjectArrayList<ItemStack> apply(ObjectArrayList<ItemStack> generatedLoot, LootContext context);
+    ObjectArrayList<ItemStack> apply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context);
 
     /**
      * Returns the registered codec for this modifier

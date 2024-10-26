@@ -10,8 +10,8 @@
                  )
                  .apply(p_327557_, LootTable::new)
 @@ -53,7 +_,7 @@
-     LootTable(LootContextParamSet p_287716_, Optional<ResourceLocation> p_298628_, List<LootPool> p_298771_, List<LootItemFunction> p_301234_) {
-         this.paramSet = p_287716_;
+     LootTable(ContextKeySet p_365565_, Optional<ResourceLocation> p_298628_, List<LootPool> p_298771_, List<LootItemFunction> p_301234_) {
+         this.paramSet = p_365565_;
          this.randomSequence = p_298628_;
 -        this.pools = p_298771_;
 +        this.pools = Lists.newArrayList(p_298771_);
@@ -56,7 +56,7 @@
          ObjectArrayList<ItemStack> objectarraylist = new ObjectArrayList<>();
 -        this.getRandomItems(p_230923_, objectarraylist::add);
 +        this.getRandomItemsRaw(p_230923_, createStackSplitter(p_230923_.getLevel(), objectarraylist::add));
-+        objectarraylist = net.minecraftforge.common.ForgeHooks.modifyLoot(this.getLootTableId(), objectarraylist, p_230923_);
++        objectarraylist = net.minecraftforge.common.ForgeHooks.modifyLoot(this, objectarraylist, p_230923_);
          return objectarraylist;
      }
  

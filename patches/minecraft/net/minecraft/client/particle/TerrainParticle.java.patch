@@ -25,4 +25,4 @@
 +     }
  
      @OnlyIn(Dist.CLIENT)
-     public static class DustPillarProvider implements ParticleProvider<BlockParticleOption> {
+     public static class CrumblingProvider implements ParticleProvider<BlockParticleOption> {

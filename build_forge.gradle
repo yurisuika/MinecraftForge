@@ -47,6 +47,7 @@ jarSigner.autoDetect('forge')
 applyPatches {
     level 'WARNING'
     failOnError = UPDATING != 'true'
+    rejects = rootProject.layout.projectDirectory.dir('rejects').asFile
 }
 
 sourceSets {
@@ -387,7 +388,7 @@ tasks.register("findFinalizeSpawnTargets", BytecodePredicateFinder) {
             return 'net/minecraft/world/level/BaseSpawner' != parent.name // Ignore this class as we special case it.
             && insn.getOpcode().equals(Opcodes.INVOKEVIRTUAL)
             && insn.name == 'm_6518_'
-            && insn.desc == '(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/world/entity/SpawnGroupData;)Lnet/minecraft/world/entity/SpawnGroupData;';
+            && insn.desc == '(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/EntitySpawnReason;Lnet/minecraft/world/entity/SpawnGroupData;)Lnet/minecraft/world/entity/SpawnGroupData;';
     }
 }
 tasks.register('validateDeprecations', ValidateDeprecations) {

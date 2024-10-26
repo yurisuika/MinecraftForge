@@ -18,16 +18,15 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.network.ConnectionStartEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.network.filters.NetworkFilters;
 import net.minecraftforge.common.util.LogicalSidedProvider;
 import net.minecraftforge.server.command.ForgeCommand;
+import net.minecraftforge.server.permission.events.PermissionGatherEvent;
 import net.minecraftforge.server.command.ConfigCommand;
 
 public class ForgeInternalHandler {
@@ -44,7 +43,7 @@ public class ForgeInternalHandler {
                     event.setCanceled(true);
                     @SuppressWarnings("resource")
                     var executor = LogicalSidedProvider.WORKQUEUE.get(event.getLevel().isClientSide ? LogicalSide.CLIENT : LogicalSide.SERVER);
-                    executor.tell(new TickTask(0, () -> event.getLevel().addFreshEntity(newEntity)));
+                    executor.schedule(new TickTask(0, () -> event.getLevel().addFreshEntity(newEntity)));
                 }
             }
         }
@@ -86,12 +85,6 @@ public class ForgeInternalHandler {
     }
 
     @SubscribeEvent
-    public void tagsUpdated(TagsUpdatedEvent event) {
-        if (event.shouldUpdateStaticData())
-            ForgeHooks.updateBurns();
-    }
-
-    @SubscribeEvent
     public void onCommandsRegister(RegisterCommandsEvent event) {
         new ForgeCommand(event.getDispatcher());
         ConfigCommand.register(event.getDispatcher());
@@ -126,5 +119,16 @@ public class ForgeInternalHandler {
     public void onConnectionStart(ConnectionStartEvent event) {
         NetworkFilters.injectIfNecessary(event.getConnection());
     }
+
+    @SubscribeEvent
+    public void serverStopping(ServerStoppingEvent evt) {
+        WorldWorkerManager.clear();
+    }
+
+    @SubscribeEvent
+    public void registerPermissionNodes(PermissionGatherEvent.Nodes event) {
+        event.addNodes(ForgeMod.USE_SELECTORS_PERMISSION);
+    }
+
 }
 

@@ -22,20 +22,21 @@ import com.google.gson.JsonObject;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
 
-public class LootModifierManager extends SimpleJsonResourceReloadListener {
+public class LootModifierManager extends SimpleJsonResourceReloadListener<JsonElement> {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final String FOLDER = "loot_modifiers";
 
-    private final RegistryAccess registries;
+    private final HolderLookup.Provider registries;
     private Map<ResourceLocation, IGlobalLootModifier> modifiers = ImmutableMap.of();
 
-    public LootModifierManager(RegistryAccess registries) {
-        super(GSON, FOLDER);
+    public LootModifierManager(HolderLookup.Provider registries) {
+        super(registries, ExtraCodecs.JSON, FOLDER);
         this.registries = registries;
     }
 

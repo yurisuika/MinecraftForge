@@ -9,10 +9,10 @@
              }
  
              @Override
-@@ -101,23 +_,25 @@
+@@ -91,23 +_,25 @@
              if (!itemstack.isEmpty() && itemstack.isEnchantable()) {
                  this.access.execute((p_341515_, p_341516_) -> {
-                     IdMap<Holder<Enchantment>> idmap = p_341515_.registryAccess().registryOrThrow(Registries.ENCHANTMENT).asHolderIdMap();
+                     IdMap<Holder<Enchantment>> idmap = p_341515_.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).asHolderIdMap();
 -                    int j = 0;
 +                    float j = 0;
  
@@ -37,7 +37,7 @@
                      }
  
                      for (int l = 0; l < 3; l++) {
-@@ -244,7 +_,7 @@
+@@ -234,7 +_,7 @@
                  if (!this.moveItemStackTo(itemstack1, 2, 38, true)) {
                      return ItemStack.EMPTY;
                  }

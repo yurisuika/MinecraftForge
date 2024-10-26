@@ -10,9 +10,7 @@
         "category": "blocks",
         "cookingtime": 200,
         "experience": 0.1,
-        "ingredient": {
-          "item": "minecraft:bee_nest"
-        },
+        "ingredient": "minecraft:bee_nest",
         "result": {
           "id": "minecraft:diamond_block"
         }

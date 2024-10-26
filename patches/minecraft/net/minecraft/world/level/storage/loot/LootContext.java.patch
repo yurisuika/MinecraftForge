@@ -17,13 +17,24 @@
 +        this.queriedLootTableId = queriedLootTableId;
      }
  
-     public boolean hasParam(LootContextParam<?> p_78937_) {
+     public boolean hasParameter(ContextKey<?> p_368930_) {
+@@ -75,6 +_,10 @@
+         return this.params.getLevel();
+     }
+ 
++    public LootParams getParams() {
++        return this.params;
++    }
++
+     public static LootContext.VisitedEntry<LootTable> createVisitedEntry(LootTable p_279327_) {
+         return new LootContext.VisitedEntry<>(LootDataType.TABLE, p_279327_);
+     }
 @@ -87,15 +_,34 @@
          return new LootContext.VisitedEntry<>(LootDataType.MODIFIER, p_279163_);
      }
  
 +    public int getLootingModifier() {
-+        return net.minecraftforge.common.ForgeHooks.getLootingLevel(getParamOrNull(LootContextParams.THIS_ENTITY), getParamOrNull(LootContextParams.ATTACKING_ENTITY), getParamOrNull(LootContextParams.DAMAGE_SOURCE));
++        return net.minecraftforge.common.ForgeHooks.getLootingLevel(getOptionalParameter(LootContextParams.THIS_ENTITY), getOptionalParameter(LootContextParams.ATTACKING_ENTITY), getOptionalParameter(LootContextParams.DAMAGE_SOURCE));
 +    }
 +
 +    public void setQueriedLootTableId(ResourceLocation queriedLootTableId) {

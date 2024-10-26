@@ -42,14 +42,14 @@ public interface ICondition {
 
         IContext EMPTY = new IContext() {
             @Override
-            public <T> Map<ResourceLocation, Collection<Holder<T>>> getAllTags(ResourceKey<? extends Registry<T>> registry) {
-                return Collections.emptyMap();
+            public <T> Collection<Holder<T>> getTag(TagKey<T> key) {
+                return Collections.emptyList();
             }
         };
 
         IContext TAGS_INVALID = new IContext() {
             @Override
-            public <T> Map<ResourceLocation, Collection<Holder<T>>> getAllTags(ResourceKey<? extends Registry<T>> registry) {
+            public <T> Collection<Holder<T>> getTag(TagKey<T> key) {
                 throw new UnsupportedOperationException("Usage of tag-based conditions is not permitted in this context!");
             }
         };
@@ -57,14 +57,6 @@ public interface ICondition {
         /**
          * Return the requested tag if available, or an empty tag otherwise.
          */
-        default <T> Collection<Holder<T>> getTag(TagKey<T> key) {
-            return getAllTags(key.registry()).getOrDefault(key.location(), Set.of());
-        }
-
-        /**
-         * Return all the loaded tags for the passed registry, or an empty map if none is available.
-         * Note that the map and the tags are unmodifiable.
-         */
-        <T> Map<ResourceLocation, Collection<Holder<T>>> getAllTags(ResourceKey<? extends Registry<T>> registry);
+        <T> Collection<Holder<T>> getTag(TagKey<T> key);
     }
 }

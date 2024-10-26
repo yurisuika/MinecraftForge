@@ -380,6 +380,7 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
         private RotationBuilder rotation;
         private boolean shade = true;
         private ForgeFaceData data = ForgeFaceData.DEFAULT;
+        private int emission = 0;
 
         private void validateCoordinate(float coord, char name) {
             Preconditions.checkArgument(!(coord < -16.0F) && !(coord > 32.0F), "Position " + name + " out of range, must be within [-16, 32]. Found: %d", coord);
@@ -559,14 +560,23 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             return this;
         }
 
+        public ElementBuilder emission(int value) {
+            this.emission = value;
+            return this;
+        }
+
         private BiConsumer<Direction, FaceBuilder> addTexture(String texture) {
             return ($, f) -> f.texture(texture);
         }
 
         BlockElement build() {
-            Map<Direction, BlockElementFace> faces = this.faces.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build(), (k1, k2) -> { throw new IllegalArgumentException(); }, LinkedHashMap::new));
-            return new BlockElement(from, to, faces, rotation == null ? null : rotation.build(), shade);
+            var faces = new LinkedHashMap<Direction, BlockElementFace>();
+            for (var entry : this.faces.entrySet()) {
+                if (faces.containsKey(entry.getKey()))
+                    throw new IllegalArgumentException("Multiple faces defined for Direction: " + entry.getKey().getName());
+                faces.put(entry.getKey(), entry.getValue().build());
+            }
+            return new BlockElement(from, to, faces, rotation == null ? null : rotation.build(), shade, emission);
         }
 
         public T end() { return self(); }

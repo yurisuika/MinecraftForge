@@ -46,7 +46,7 @@
      }
  
      public boolean hasPrecipitation() {
-@@ -189,7 +_,7 @@
+@@ -186,7 +_,7 @@
      }
  
      public BiomeGenerationSettings getGenerationSettings() {
@@ -55,7 +55,7 @@
      }
  
      public int getFogColor() {
-@@ -251,6 +_,31 @@
+@@ -248,6 +_,31 @@
  
      public Optional<Music> getBackgroundMusic() {
          return this.specialEffects.getBackgroundMusic();

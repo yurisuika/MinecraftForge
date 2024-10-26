@@ -1,11 +1,29 @@
 --- a/net/minecraft/world/level/storage/loot/LootParams.java
 +++ b/net/minecraft/world/level/storage/loot/LootParams.java
-@@ -125,7 +_,7 @@
+@@ -53,6 +_,15 @@
+             this.level = p_287594_;
+         }
  
-         public LootParams create(LootContextParamSet p_287701_) {
-             Set<LootContextParam<?>> set = Sets.difference(this.params.keySet(), p_287701_.getAllowed());
--            if (!set.isEmpty()) {
-+            if (false && !set.isEmpty()) { // Forge: Allow mods to pass custom loot parameters (not part of the vanilla loot table) to the loot context.
-                 throw new IllegalArgumentException("Parameters not allowed in this parameter set: " + set);
-             } else {
-                 Set<LootContextParam<?>> set1 = Sets.difference(p_287701_.getRequired(), this.params.keySet());
++        @SuppressWarnings("unchecked")
++        public Builder(LootParams parent) {
++            this.level = parent.getLevel();
++            this.withLuck(parent.getLuck());
++            parent.dynamicDrops.forEach(this::withDynamicDrop);
++            for (var key : parent.params.keySet())
++                this.withParameter((ContextKey<Object>)key, (Object)parent.contextMap().getOptional(key));
++        }
++
+         public ServerLevel getLevel() {
+             return this.level;
+         }
+@@ -93,6 +_,10 @@
+         public LootParams create(ContextKeySet p_367827_) {
+             ContextMap contextmap = this.params.create(p_367827_);
+             return new LootParams(this.level, contextmap, this.dynamicDrops, this.luck);
++        }
++
++        public LootParams create() {
++            return new LootParams(this.level, this.params.create(), this.dynamicDrops, this.luck);
+         }
+     }
+ 

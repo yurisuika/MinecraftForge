@@ -50,7 +50,7 @@ class TPSCommand
         if (times == null) // Null means the world is unloaded. Not invalid. That's taken care of by DimensionArgument itself.
             times = UNLOADED;
 
-        final Registry<DimensionType> reg = cs.registryAccess().registryOrThrow(Registries.DIMENSION_TYPE);
+        final Registry<DimensionType> reg = cs.registryAccess().lookupOrThrow(Registries.DIMENSION_TYPE);
         double worldTickTime = mean(times) * 1.0E-6D;
         double worldTPS = Math.min(1000.0 / worldTickTime, 20);
         cs.sendSuccess(() -> Component.translatable("commands.forge.tps.summary.named", dim.dimension().location().toString(), reg.getKey(dim.dimensionType()).toString(), TIME_FORMATTER.format(worldTickTime), TIME_FORMATTER.format(worldTPS)), false);

@@ -1,8 +1,8 @@
 --- a/net/minecraft/world/entity/animal/Fox.java
 +++ b/net/minecraft/world/entity/animal/Fox.java
-@@ -835,6 +_,16 @@
+@@ -834,6 +_,16 @@
          protected void breed() {
-             ServerLevel serverlevel = (ServerLevel)this.level;
+             ServerLevel serverlevel = this.level;
              Fox fox = (Fox)this.animal.getBreedOffspring(serverlevel, this.partner);
 +            var event = net.minecraftforge.event.ForgeEventFactory.onBabySpawn(animal, partner, fox);
 +            fox = (Fox)event.getChild();
@@ -17,16 +17,16 @@
              if (fox != null) {
                  ServerPlayer serverplayer = this.animal.getLoveCause();
                  ServerPlayer serverplayer1 = this.partner.getLoveCause();
-@@ -918,7 +_,7 @@
+@@ -917,7 +_,7 @@
          }
  
          protected void onReachedTarget() {
--            if (Fox.this.level().getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
-+            if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(Fox.this.level(), Fox.this)) {
+-            if (getServerLevel(Fox.this.level()).getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
++            if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(getServerLevel(Fox.this.level()), Fox.this)) {
                  BlockState blockstate = Fox.this.level().getBlockState(this.blockPos);
                  if (blockstate.is(Blocks.SWEET_BERRY_BUSH)) {
                      this.pickSweetBerries(blockstate);
-@@ -977,7 +_,7 @@
+@@ -976,7 +_,7 @@
  
          @Override
          public boolean canUse() {

@@ -1,8 +1,8 @@
 --- a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-@@ -105,6 +_,15 @@
+@@ -103,6 +_,15 @@
+         this.setHealth(this.getMaxHealth());
          this.noPhysics = true;
-         this.noCulling = true;
          this.phaseManager = new EnderDragonPhaseManager(this);
 +        this.setId(ENTITY_COUNTER.getAndAdd(this.subEntities.length + 1) + 1); // Forge: Fix MC-158205: Make sure part ids are successors of parent mob id
 +    }
@@ -16,8 +16,8 @@
      }
  
      public void setDragonFight(EndDragonFight p_287736_) {
-@@ -172,8 +_,19 @@
-         return adouble;
+@@ -151,8 +_,19 @@
+         p_330342_.define(DATA_PHASE, EnderDragonPhase.HOVERING.getId());
      }
  
 +    @org.jetbrains.annotations.Nullable private Player unlimitedLastHurtByPlayer = null;
@@ -36,36 +36,36 @@
          this.processFlappingMovement();
          if (this.level().isClientSide) {
              this.setHealth(this.getHealth());
-@@ -475,7 +_,7 @@
+@@ -445,7 +_,7 @@
                      BlockPos blockpos = new BlockPos(k1, l1, i2);
-                     BlockState blockstate = this.level().getBlockState(blockpos);
+                     BlockState blockstate = p_363273_.getBlockState(blockpos);
                      if (!blockstate.isAir() && !blockstate.is(BlockTags.DRAGON_TRANSPARENT)) {
--                        if (this.level().getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) && !blockstate.is(BlockTags.DRAGON_IMMUNE)) {
-+                        if (net.minecraftforge.common.ForgeHooks.canEntityDestroy(this.level(), blockpos, this) && !blockstate.is(BlockTags.DRAGON_IMMUNE)) {
-                             flag1 = this.level().removeBlock(blockpos, false) || flag1;
+-                        if (p_363273_.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) && !blockstate.is(BlockTags.DRAGON_IMMUNE)) {
++                        if (net.minecraftforge.common.ForgeHooks.canEntityDestroy(p_363273_, blockpos, this) && !blockstate.is(BlockTags.DRAGON_IMMUNE)) {
+                             flag1 = p_363273_.removeBlock(blockpos, false) || flag1;
                          } else {
                              flag = true;
-@@ -571,7 +_,8 @@
+@@ -540,7 +_,8 @@
  
-         if (this.level() instanceof ServerLevel) {
-             if (this.dragonDeathTime > 150 && this.dragonDeathTime % 5 == 0 && flag) {
--                ExperienceOrb.award((ServerLevel)this.level(), this.position(), Mth.floor((float)i * 0.08F));
+         if (this.level() instanceof ServerLevel serverlevel) {
+             if (this.dragonDeathTime > 150 && this.dragonDeathTime % 5 == 0 && serverlevel.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
+-                ExperienceOrb.award(serverlevel, this.position(), Mth.floor((float)i * 0.08F));
 +                int award = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(this, this.unlimitedLastHurtByPlayer, Mth.floor((float)i * 0.08F));
-+                ExperienceOrb.award((ServerLevel) this.level(), this.position(), award);
++                ExperienceOrb.award(serverlevel, this.position(), award);
              }
  
              if (this.dragonDeathTime == 1 && !this.isSilent()) {
-@@ -582,7 +_,8 @@
+@@ -551,7 +_,8 @@
          this.move(MoverType.SELF, new Vec3(0.0, 0.1F, 0.0));
-         if (this.dragonDeathTime == 200 && this.level() instanceof ServerLevel) {
-             if (flag) {
--                ExperienceOrb.award((ServerLevel)this.level(), this.position(), Mth.floor((float)i * 0.2F));
+         if (this.dragonDeathTime == 200 && this.level() instanceof ServerLevel serverlevel1) {
+             if (serverlevel1.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
+-                ExperienceOrb.award(serverlevel1, this.position(), Mth.floor((float)i * 0.2F));
 +                int award = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(this, this.unlimitedLastHurtByPlayer, Mth.floor((float)i * 0.2F));
-+                ExperienceOrb.award((ServerLevel) this.level(), this.position(), award);
++                ExperienceOrb.award(serverlevel1, this.position(), award);
              }
  
              if (this.dragonFight != null) {
-@@ -916,6 +_,7 @@
+@@ -864,6 +_,7 @@
      @Override
      public void recreateFromPacket(ClientboundAddEntityPacket p_218825_) {
          super.recreateFromPacket(p_218825_);
@@ -73,7 +73,7 @@
          EnderDragonPart[] aenderdragonpart = this.getSubEntities();
  
          for (int i = 0; i < aenderdragonpart.length; i++) {
-@@ -931,5 +_,15 @@
+@@ -879,5 +_,15 @@
      @Override
      protected float sanitizeScale(float p_333905_) {
          return 1.0F;

@@ -22,13 +22,13 @@
      }
  
      @Override
-     public InteractionResultHolder<ItemStack> use(Level p_40703_, Player p_40704_, InteractionHand p_40705_) {
+     public InteractionResult use(Level p_40703_, Player p_40704_, InteractionHand p_40705_) {
          ItemStack itemstack = p_40704_.getItemInHand(p_40705_);
          BlockHitResult blockhitresult = getPlayerPOVHitResult(p_40703_, p_40704_, this.content == Fluids.EMPTY ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE);
-+        InteractionResultHolder<ItemStack> ret = net.minecraftforge.event.ForgeEventFactory.onBucketUse(p_40704_, p_40703_, itemstack, blockhitresult);
++        var ret = net.minecraftforge.event.ForgeEventFactory.onBucketUse(p_40704_, p_40703_, itemstack, blockhitresult);
 +        if (ret != null) return ret;
          if (blockhitresult.getType() == HitResult.Type.MISS) {
-             return InteractionResultHolder.pass(itemstack);
+             return InteractionResult.PASS;
          } else if (blockhitresult.getType() != HitResult.Type.BLOCK) {
 @@ -56,7 +_,7 @@
                      ItemStack itemstack3 = bucketpickup.pickupBlock(p_40704_, p_40703_, blockpos, blockstate1);
@@ -40,7 +40,7 @@
                          ItemStack itemstack2 = ItemUtils.createFilledResult(itemstack, p_40704_, itemstack3);
                          if (!p_40703_.isClientSide) {
 @@ -70,8 +_,8 @@
-                 return InteractionResultHolder.fail(itemstack);
+                 return InteractionResult.FAIL;
              } else {
                  BlockState blockstate = p_40703_.getBlockState(blockpos);
 -                BlockPos blockpos2 = blockstate.getBlock() instanceof LiquidBlockContainer && this.content == Fluids.WATER ? blockpos : blockpos1;

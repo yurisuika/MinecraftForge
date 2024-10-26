@@ -5,8 +5,7 @@
 
 package net.minecraftforge.common.crafting.ingredients;
 
-import java.util.stream.Stream;
-
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
@@ -24,7 +23,7 @@ public class StrictNBTIngredient extends AbstractIngredient {
 
     private final ItemStack stack;
     private StrictNBTIngredient(ItemStack stack) {
-        super(Stream.of(new Ingredient.ItemValue(stack)));
+        super(HolderSet.direct(stack.getItemHolder()));
         this.stack = stack;
     }
 
@@ -32,6 +31,7 @@ public class StrictNBTIngredient extends AbstractIngredient {
     public boolean test(@Nullable ItemStack input) {
         if (input == null)
             return false;
+
         //Can't use areItemStacksEqualUsingNBTShareTag because it compares stack size as well
         var inbt = input.get(DataComponents.CUSTOM_DATA);
         var tnbt = this.stack.get(DataComponents.CUSTOM_DATA);

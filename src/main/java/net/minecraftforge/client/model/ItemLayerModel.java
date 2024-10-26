@@ -7,14 +7,12 @@ package net.minecraftforge.client.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.ItemModelGenerator;
-import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
@@ -29,7 +27,6 @@ import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
 import net.minecraftforge.client.model.geometry.UnbakedGeometryHelper;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -38,43 +35,36 @@ import java.util.function.Function;
  * - Not limited to an arbitrary number of layers (5)
  * - Support for per-layer render types
  */
-public class ItemLayerModel implements IUnbakedGeometry<ItemLayerModel>
-{
+public class ItemLayerModel implements IUnbakedGeometry<ItemLayerModel> {
     @Nullable
     private ImmutableList<Material> textures;
     private final Int2ObjectMap<ResourceLocation> renderTypeNames;
 
-    private ItemLayerModel(@Nullable ImmutableList<Material> textures, Int2ObjectMap<ResourceLocation> renderTypeNames)
-    {
+    private ItemLayerModel(@Nullable ImmutableList<Material> textures, Int2ObjectMap<ResourceLocation> renderTypeNames) {
         this.textures = textures;
         this.renderTypeNames = renderTypeNames;
     }
 
     @Override
-    public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides)
-    {
-        if (textures == null)
-        {
+    public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState) {
+        if (textures == null) {
             ImmutableList.Builder<Material> builder = ImmutableList.builder();
             for (int i = 0; context.hasMaterial("layer" + i); i++)
-            {
                 builder.add(context.getMaterial("layer" + i));
-            }
             textures = builder.build();
         }
 
         TextureAtlasSprite particle = spriteGetter.apply(
-                context.hasMaterial("particle") ? context.getMaterial("particle") : textures.get(0)
+            context.hasMaterial("particle") ? context.getMaterial("particle") : textures.get(0)
         );
         var rootTransform = context.getRootTransform();
         if (!rootTransform.isIdentity())
             modelState = UnbakedGeometryHelper.composeRootTransformIntoModelState(modelState, rootTransform);
 
         var normalRenderTypes = new RenderTypeGroup(RenderType.translucent(), ForgeRenderTypes.ITEM_UNSORTED_TRANSLUCENT.get());
-        CompositeModel.Baked.Builder builder = CompositeModel.Baked.builder(context, particle, overrides, context.getTransforms());
-        for (int i = 0; i < textures.size(); i++)
-        {
-            TextureAtlasSprite sprite = spriteGetter.apply(textures.get(i));
+        var builder = CompositeModel.Baked.builder(context, particle, context.getTransforms());
+        for (int i = 0; i < textures.size(); i++) {
+            var sprite = spriteGetter.apply(textures.get(i));
             var unbaked = UnbakedGeometryHelper.createUnbakedItemElements(i, sprite.contents());
             var quads = UnbakedGeometryHelper.bakeElements(unbaked, $ -> sprite, modelState);
             var renderTypeName = renderTypeNames.get(i);
@@ -85,19 +75,15 @@ public class ItemLayerModel implements IUnbakedGeometry<ItemLayerModel>
         return builder.build();
     }
 
-    public static final class Loader implements IGeometryLoader<ItemLayerModel>
-    {
+    public static final class Loader implements IGeometryLoader<ItemLayerModel> {
         public static final Loader INSTANCE = new Loader();
 
         @Override
-        public ItemLayerModel read(JsonObject jsonObject, JsonDeserializationContext deserializationContext)
-        {
+        public ItemLayerModel read(JsonObject jsonObject, JsonDeserializationContext deserializationContext) {
             var renderTypeNames = new Int2ObjectOpenHashMap<ResourceLocation>();
-            if (jsonObject.has("render_types"))
-            {
+            if (jsonObject.has("render_types")) {
                 var renderTypes = jsonObject.getAsJsonObject("render_types");
-                for (Map.Entry<String, JsonElement> entry : renderTypes.entrySet())
-                {
+                for (var entry : renderTypes.entrySet()) {
                     var renderType = ResourceLocation.parse(entry.getKey());
                     for (var layer : entry.getValue().getAsJsonArray())
                         if (renderTypeNames.put(layer.getAsInt(), renderType) != null)
@@ -108,15 +94,12 @@ public class ItemLayerModel implements IUnbakedGeometry<ItemLayerModel>
             return new ItemLayerModel(null, renderTypeNames);
         }
 
-        protected void readLayerData(JsonObject jsonObject, String name, Int2ObjectOpenHashMap<ResourceLocation> renderTypeNames, Int2ObjectMap<ForgeFaceData> layerData, boolean logWarning)
-        {
+        protected void readLayerData(JsonObject jsonObject, String name, Int2ObjectOpenHashMap<ResourceLocation> renderTypeNames, Int2ObjectMap<ForgeFaceData> layerData, boolean logWarning) {
             if (!jsonObject.has(name))
-            {
                 return;
-            }
+
             var fullbrightLayers = jsonObject.getAsJsonObject(name);
-            for (var entry : fullbrightLayers.entrySet())
-            {
+            for (var entry : fullbrightLayers.entrySet()) {
                 int layer = Integer.parseInt(entry.getKey());
                 var data = ForgeFaceData.read(entry.getValue(), ForgeFaceData.DEFAULT);
                 layerData.put(layer, data);

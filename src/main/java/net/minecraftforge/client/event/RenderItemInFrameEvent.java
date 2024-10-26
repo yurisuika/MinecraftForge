@@ -9,7 +9,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemFrameRenderer;
-import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.client.renderer.entity.state.ItemFrameRenderState;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
@@ -31,18 +31,16 @@ import org.jetbrains.annotations.ApiStatus;
  */
 @Cancelable
 public class RenderItemInFrameEvent extends Event {
-    private final ItemStack itemStack;
-    private final ItemFrame itemFrameEntity;
+    private final ItemFrameRenderState state;
     private final ItemFrameRenderer<?> renderer;
     private final PoseStack poseStack;
     private final MultiBufferSource multiBufferSource;
     private final int packedLight;
 
     @ApiStatus.Internal
-    public RenderItemInFrameEvent(ItemFrame itemFrame, ItemFrameRenderer<?> renderItemFrame, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        itemStack = itemFrame.getItem();
-        itemFrameEntity = itemFrame;
-        renderer = renderItemFrame;
+    public RenderItemInFrameEvent(ItemFrameRenderState state, ItemFrameRenderer<?> renderItemFrame, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        this.state = state;
+        this.renderer = renderItemFrame;
         this.poseStack = poseStack;
         this.multiBufferSource = multiBufferSource;
         this.packedLight = packedLight;
@@ -52,14 +50,14 @@ public class RenderItemInFrameEvent extends Event {
      * {@return the item stack being rendered}
      */
     public ItemStack getItemStack() {
-        return itemStack;
+        return getItemFrameState().itemStack;
     }
 
     /**
      * {@return the item frame entity}
      */
-    public ItemFrame getItemFrameEntity() {
-        return itemFrameEntity;
+    public ItemFrameRenderState getItemFrameState() {
+        return state;
     }
 
     /**

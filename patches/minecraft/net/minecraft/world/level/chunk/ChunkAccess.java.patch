@@ -1,11 +1,11 @@
 --- a/net/minecraft/world/level/chunk/ChunkAccess.java
 +++ b/net/minecraft/world/level/chunk/ChunkAccess.java
-@@ -315,23 +_,28 @@
+@@ -324,23 +_,28 @@
  
      @Override
      public final void findBlockLightSources(BiConsumer<BlockPos, BlockState> p_285269_) {
--        this.findBlocks(p_284897_ -> p_284897_.getLightEmission() != 0, p_285269_);
-+        this.findBlocks((p_284897_, pos) -> p_284897_.getLightEmission(this, pos) != 0, p_285269_);
+-        this.findBlocks(p_360555_ -> p_360555_.getLightEmission() != 0, p_285269_);
++        this.findBlocks((p_360555_, pos) -> p_360555_.getLightEmission(this, pos) != 0, p_285269_);
      }
  
      public void findBlocks(Predicate<BlockState> p_285343_, BiConsumer<BlockPos, BlockState> p_285030_) {
@@ -15,7 +15,7 @@
 +    public void findBlocks(java.util.function.BiPredicate<BlockState, BlockPos> p_285343_, BiConsumer<BlockPos, BlockState> p_285030_) {
          BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
  
-         for (int i = this.getMinSection(); i < this.getMaxSection(); i++) {
+         for (int i = this.getMinSectionY(); i <= this.getMaxSectionY(); i++) {
              LevelChunkSection levelchunksection = this.getSection(this.getSectionIndexFromSectionY(i));
 -            if (levelchunksection.maybeHas(p_285343_)) {
 +            if (levelchunksection.maybeHas(state -> p_285343_.test(state, BlockPos.ZERO))) {
@@ -33,10 +33,10 @@
                              }
                          }
                      }
-@@ -475,5 +_,10 @@
+@@ -484,5 +_,10 @@
      }
  
-     public static record TicksToSave(SerializableTickContainer<Block> blocks, SerializableTickContainer<Fluid> fluids) {
+     public static record PackedTicks(List<SavedTick<Block>> blocks, List<SavedTick<Fluid>> fluids) {
 +    }
 +
 +    @Nullable

@@ -67,6 +67,11 @@ public class ModelDataManager {
         return getAt(new ChunkPos(pos)).get(pos);
     }
 
+    public ModelData getAtOrEmpty(BlockPos pos) {
+        var ret = getAt(pos);
+        return ret == null ? ModelData.EMPTY : ret;
+    }
+
     public Map<BlockPos, ModelData> getAt(SectionPos pos) {
         return getAt(pos.chunk());
     }

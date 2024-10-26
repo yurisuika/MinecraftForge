@@ -133,6 +133,8 @@ public final class CriterionTest extends BaseTestMod {
                 event.getLookupProvider(),
                 event.getExistingFileHelper(),
                 List.of(((registries, saver, existingFileHelper) -> {
+                    var blocks = registries.lookup(Registries.BLOCK).get();
+                    var items = registries.lookup(Registries.ITEM).get();
                     saver.accept(new Advancement.Builder()
                         .display(Items.COD,
                             Component.literal("Fish vs Glass"),
@@ -144,8 +146,8 @@ public final class CriterionTest extends BaseTestMod {
                         .parent(STORY_ROOT)
                         .requirements(AdvancementRequirements.Strategy.AND)
                         .addCriterion(TEST_CRITERION_ID, CRITERION.get().instance(
-                            BlockPredicate.Builder.block().of(Tags.Blocks.GLASS_BLOCKS).build(),
-                            ItemPredicate.Builder.item().of(tag).build(),
+                            BlockPredicate.Builder.block().of(blocks, Tags.Blocks.GLASS_BLOCKS).build(),
+                            ItemPredicate.Builder.item().of(items, tag).build(),
                             true
                         ))
                         .build(TEST_ADVANCEMENT_ID));

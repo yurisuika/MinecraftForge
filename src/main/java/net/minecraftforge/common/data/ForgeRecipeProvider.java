@@ -8,21 +8,23 @@ package net.minecraftforge.common.data;
 import com.google.gson.JsonElement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.Advancement.Builder;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderLookup.Provider;
-import net.minecraft.data.CachedOutput;
+import net.minecraft.core.HolderLookup.RegistryLookup;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.packs.VanillaRecipeProvider;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Ingredient.ItemValue;
-import net.minecraft.world.item.crafting.Ingredient.TagValue;
-import net.minecraft.world.item.crafting.Ingredient.Value;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
@@ -30,10 +32,13 @@ import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.Tags;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.unsafe.UnsafeFieldAccess;
+import net.minecraftforge.unsafe.UnsafeHacks;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,19 +48,26 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public final class ForgeRecipeProvider extends VanillaRecipeProvider {
+    private static final Logger LOGGER = LogManager.getLogger();
+    private final RegistryLookup<Item> items;
     private final Map<Item, TagKey<Item>> replacements = HashMap.newHashMap(12);
-    private final Set<ResourceLocation> excludes = HashSet.newHashSet(16);
+    private final Set<ResourceKey<Recipe<?>>> excludes = HashSet.newHashSet(16);
+    private final UnsafeFieldAccess<ShapelessRecipe, List<Ingredient>> INGREDIENTS = UnsafeHacks.findField(ShapelessRecipe.class, "ingredients");
+    private final UnsafeFieldAccess<ShapedRecipe, ShapedRecipePattern> PATTERN = UnsafeHacks.findField(ShapedRecipe.class, "pattern");
+    private final UnsafeFieldAccess<Ingredient, HolderSet<Item>> VALUES = UnsafeHacks.findField(Ingredient.class, "values");
 
-    public ForgeRecipeProvider(PackOutput packOutput, CompletableFuture<HolderLookup.Provider> lookup) {
-        super(packOutput, lookup);
+    private ForgeRecipeProvider(HolderLookup.Provider lookup, RecipeOutput output) {
+        super(lookup, new Wrapped(output));
+        ((Wrapped)this.output).setSelf(this);
+        this.items = lookup.lookupOrThrow(Registries.ITEM);
     }
 
     private void exclude(ItemLike item) {
-        excludes.add(ForgeRegistries.ITEMS.getKey(item.asItem()));
+        exclude(BuiltInRegistries.ITEM.getKey(item.asItem()).toString());
     }
 
     private void exclude(String name) {
-        excludes.add(ResourceLocation.parse(name));
+        excludes.add(ResourceKey.create(Registries.RECIPE, ResourceLocation.parse(name)));
     }
 
     private void replace(ItemLike item, TagKey<Item> tag) {
@@ -63,7 +75,7 @@ public final class ForgeRecipeProvider extends VanillaRecipeProvider {
     }
 
     @Override
-    protected void buildRecipes(RecipeOutput consumer) {
+    protected void buildRecipes() {
         replace(Items.STICK, Tags.Items.RODS_WOODEN);
         replace(Items.GOLD_INGOT, Tags.Items.INGOTS_GOLD);
         replace(Items.IRON_INGOT, Tags.Items.INGOTS_IRON);
@@ -96,32 +108,11 @@ public final class ForgeRecipeProvider extends VanillaRecipeProvider {
         exclude(Blocks.COBBLED_DEEPSLATE_SLAB);
         exclude(Blocks.COBBLED_DEEPSLATE_WALL);
 
-        super.buildRecipes(new RecipeOutput() {
-            @Override
-            public void accept(ResourceLocation id, Recipe<?> recipe, AdvancementHolder advancement) {
-                var modified = enhance(id, recipe);
-                if (modified != null)
-                    consumer.accept(id, modified, advancement);
-            }
-
-            @Override
-            public Builder advancement() {
-                return consumer.advancement();
-            }
-
-            @Override
-            public void accept(ResourceLocation id, Recipe<?> recipe, ResourceLocation advancementId, JsonElement advancement) {
-            }
-
-            @Override
-            public Provider registry() {
-                return consumer.registry();
-            }
-        });
+        super.buildRecipes();
     }
 
     @Nullable
-    private Recipe<?> enhance(ResourceLocation id, Recipe<?> vanilla) {
+    private Recipe<?> enhance(ResourceKey<Recipe<?>> id, Recipe<?> vanilla) {
         if (vanilla instanceof ShapelessRecipe shapeless)
             return enhance(id, shapeless);
         if (vanilla instanceof ShapedRecipe shaped)
@@ -130,8 +121,8 @@ public final class ForgeRecipeProvider extends VanillaRecipeProvider {
     }
 
     @Nullable
-    private Recipe<?> enhance(ResourceLocation id, ShapelessRecipe vanilla) {
-        List<Ingredient> ingredients = getField(ShapelessRecipe.class, vanilla, 3);
+    private Recipe<?> enhance(ResourceKey<Recipe<?>> id, ShapelessRecipe vanilla) {
+        List<Ingredient> ingredients = INGREDIENTS.get(vanilla);
         boolean modified = false;
         for (int x = 0; x < ingredients.size(); x++) {
             Ingredient ing = enhance(id, ingredients.get(x));
@@ -144,21 +135,8 @@ public final class ForgeRecipeProvider extends VanillaRecipeProvider {
     }
 
     @Nullable
-    @Override
-    protected CompletableFuture<?> saveAdvancement(CachedOutput output, ResourceLocation advancementId, JsonElement advancement) {
-        // NOOP - We don't replace any of the advancement things yet...
-        return null;
-    }
-
-    @Override
-    protected CompletableFuture<?> buildAdvancement(CachedOutput p_253674_, HolderLookup.Provider p_335995_, AdvancementHolder p_297687_) {
-        // NOOP - We don't replace any of the advancement things yet...
-        return CompletableFuture.allOf();
-    }
-
-    @Nullable
-    private Recipe<?> enhance(ResourceLocation id, ShapedRecipe vanilla) {
-        ShapedRecipePattern pattern = getField(ShapedRecipe.class, vanilla, 2);
+    private Recipe<?> enhance(ResourceKey<Recipe<?>> id, ShapedRecipe vanilla) {
+        ShapedRecipePattern pattern = PATTERN.get(vanilla);
         var data = pattern.data().orElseThrow(() -> new IllegalStateException("Weird shaped recipe, data is missing? " + id + " " + vanilla));
         Map<Character, Ingredient> ingredients = data.key();
         boolean modified = false;
@@ -173,36 +151,92 @@ public final class ForgeRecipeProvider extends VanillaRecipeProvider {
     }
 
     @Nullable
-    private Ingredient enhance(ResourceLocation name, Ingredient vanilla) {
+    private Ingredient enhance(ResourceKey<Recipe<?>> name, Ingredient vanilla) {
         if (excludes.contains(name))
             return null;
 
-        boolean modified = false;
-        List<Value> items = new ArrayList<>();
-        Value[] vanillaItems = getField(Ingredient.class, vanilla, 3); //This will probably crash between versions, if null fix index
-        for (Value entry : vanillaItems) {
-            if (entry instanceof ItemValue) {
-                ItemStack stack = entry.getItems().stream().findFirst().orElse(ItemStack.EMPTY);
-                TagKey<Item> replacement = replacements.get(stack.getItem());
-                if (replacement != null) {
-                    items.add(new TagValue(replacement));
-                    modified = true;
-                } else
-                    items.add(entry);
+        HolderSet<Item> vanillaItems = VALUES.get(vanilla);
+        var unwraped = vanillaItems.unwrap();
+
+        if (unwraped.left().isPresent()) // Already a tag
+            return null;
+
+        Ingredient ret = null;
+        var items = new ArrayList<Holder<Item>>();
+        for (var entry : unwraped.right().get()) {
+            var item = entry.get();
+            var replacement = replacements.get(item);
+            if (replacement != null) {
+                if (ret != null) {
+                    LOGGER.warn("Failed to enahnce {} ingredient has multiple input items", name);
+                    return null;
+                }
+                ret = Ingredient.of(this.items.getOrThrow(replacement));
             } else
                 items.add(entry);
         }
-        return modified ? Ingredient.fromValues(items.stream()) : null;
+
+        if (ret != null && !items.isEmpty()) {
+            LOGGER.warn("Failed to enahnce {} ingredient has multiple input items", name);
+            return null;
+        }
+
+        return ret;
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T, R> R getField(Class<T> clz, T inst, int index) {
-        Field fld = clz.getDeclaredFields()[index];
-        fld.setAccessible(true);
-        try {
-            return (R) fld.get(inst);
-        } catch (IllegalArgumentException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+    public static class Runner extends RecipeProvider.Runner {
+        public Runner(PackOutput output, CompletableFuture<Provider> registries) {
+            super(output, registries);
         }
+
+        @Override
+        public String getName() {
+            return ForgeRecipeProvider.class.getSimpleName();
+        }
+
+        @Override
+        protected RecipeProvider createRecipeProvider(Provider registries, RecipeOutput output) {
+            return new ForgeRecipeProvider(registries, output);
+        }
+    }
+
+    private static class Wrapped implements RecipeOutput {
+        private final RecipeOutput wrapped;
+        private ForgeRecipeProvider self;
+
+        private Wrapped(RecipeOutput wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        private void setSelf(ForgeRecipeProvider self) {
+            this.self = self;
+        }
+
+        @Override
+        public void accept(ResourceKey<Recipe<?>> id, Recipe<?> recipe, AdvancementHolder advancement) {
+            var modified = self.enhance(id, recipe);
+            if (modified != null)
+                wrapped.accept(id, modified, null);
+        }
+
+        @Override
+        public Builder advancement() {
+            return wrapped.advancement();
+        }
+
+        @Override
+        public void accept(ResourceKey<Recipe<?>> id, Recipe<?> recipe, ResourceLocation advancementId, JsonElement advancement) {
+            var modified = self.enhance(id, recipe);
+            if (modified != null)
+                wrapped.accept(id, modified, null);
+        }
+
+        @Override
+        public Provider registry() {
+            return wrapped.registry();
+        }
+
+        @Override
+        public void includeRootAdvancement() {}
     }
 }

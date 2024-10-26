@@ -6,7 +6,6 @@
 package net.minecraftforge.client.model;
 
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
@@ -22,24 +21,22 @@ import java.util.List;
  * Provides a generic base implementation via {@link #of(boolean, boolean, boolean, ItemTransforms, ItemOverrides, TextureAtlasSprite, RenderTypeGroup)}
  * and a quad-collecting alternative via {@link #collecting(List)}.
  */
-public interface IModelBuilder<T extends IModelBuilder<T>>
-{
+public interface IModelBuilder<T extends IModelBuilder<T>> {
     /**
      * Creates a new model builder that uses the provided attributes in the final baked model.
      */
     static IModelBuilder<?> of(boolean hasAmbientOcclusion, boolean usesBlockLight, boolean isGui3d,
-                               ItemTransforms transforms, ItemOverrides overrides, TextureAtlasSprite particle,
-                               RenderTypeGroup renderTypes)
-    {
-        return new Simple(hasAmbientOcclusion, usesBlockLight, isGui3d, transforms, overrides, particle, renderTypes);
+                               ItemTransforms transforms, TextureAtlasSprite particle,
+                               RenderTypeGroup renderTypes
+    ){
+        return new Simple(hasAmbientOcclusion, usesBlockLight, isGui3d, transforms, particle, renderTypes);
     }
 
     /**
      * Creates a new model builder that collects quads to the provided list, returning
      * {@linkplain EmptyModel#BAKED an empty model} if you call {@link #build()}.
      */
-    static IModelBuilder<?> collecting(List<BakedQuad> quads)
-    {
+    static IModelBuilder<?> collecting(List<BakedQuad> quads) {
         return new Collecting(quads);
     }
 
@@ -49,69 +46,58 @@ public interface IModelBuilder<T extends IModelBuilder<T>>
 
     BakedModel build();
 
-    class Simple implements IModelBuilder<Simple>
-    {
+    class Simple implements IModelBuilder<Simple> {
         private final SimpleBakedModel.Builder builder;
         private final RenderTypeGroup renderTypes;
 
         private Simple(boolean hasAmbientOcclusion, boolean usesBlockLight, boolean isGui3d,
-                       ItemTransforms transforms, ItemOverrides overrides, TextureAtlasSprite particle,
-                       RenderTypeGroup renderTypes)
-        {
-            this.builder = new SimpleBakedModel.Builder(hasAmbientOcclusion, usesBlockLight, isGui3d, transforms, overrides).particle(particle);
+                       ItemTransforms transforms, TextureAtlasSprite particle, RenderTypeGroup renderTypes
+        ) {
+            this.builder = new SimpleBakedModel.Builder(hasAmbientOcclusion, usesBlockLight, isGui3d, transforms).particle(particle);
             this.renderTypes = renderTypes;
         }
 
         @Override
-        public Simple addCulledFace(Direction facing, BakedQuad quad)
-        {
+        public Simple addCulledFace(Direction facing, BakedQuad quad) {
             builder.addCulledFace(facing, quad);
             return this;
         }
 
         @Override
-        public Simple addUnculledFace(BakedQuad quad)
-        {
+        public Simple addUnculledFace(BakedQuad quad) {
             builder.addUnculledFace(quad);
             return this;
         }
 
         @Deprecated
         @Override
-        public BakedModel build()
-        {
+        public BakedModel build() {
             return builder.renderTypes(renderTypes).build();
         }
     }
 
-    class Collecting implements IModelBuilder<Collecting>
-    {
+    class Collecting implements IModelBuilder<Collecting> {
         private final List<BakedQuad> quads;
 
-        private Collecting(List<BakedQuad> quads)
-        {
+        private Collecting(List<BakedQuad> quads) {
             this.quads = quads;
         }
 
         @Override
-        public Collecting addCulledFace(Direction facing, BakedQuad quad)
-        {
+        public Collecting addCulledFace(Direction facing, BakedQuad quad) {
             quads.add(quad);
             return this;
         }
 
         @Override
-        public Collecting addUnculledFace(BakedQuad quad)
-        {
+        public Collecting addUnculledFace(BakedQuad quad) {
             quads.add(quad);
             return this;
         }
 
         @Override
-        public BakedModel build()
-        {
+        public BakedModel build() {
             return EmptyModel.BAKED;
         }
     }
 }
-

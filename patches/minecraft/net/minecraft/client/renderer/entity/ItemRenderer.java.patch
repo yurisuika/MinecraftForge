@@ -1,63 +1,54 @@
 --- a/net/minecraft/client/renderer/entity/ItemRenderer.java
 +++ b/net/minecraft/client/renderer/entity/ItemRenderer.java
-@@ -68,7 +_,7 @@
-     public ItemRenderer(Minecraft p_266926_, TextureManager p_266774_, ModelManager p_266850_, ItemColors p_267016_, BlockEntityWithoutLevelRenderer p_267049_) {
-         this.minecraft = p_266926_;
-         this.textureManager = p_266774_;
--        this.itemModelShaper = new ItemModelShaper(p_266850_);
-+        this.itemModelShaper = new net.minecraftforge.client.model.ForgeItemModelShaper(p_266850_);;
-         this.blockEntityRenderer = p_267049_;
- 
-         for (Item item : BuiltInRegistries.ITEM) {
-@@ -118,7 +_,7 @@
-                 }
+@@ -152,7 +_,7 @@
+         float p_368655_
+     ) {
+         p_366810_.pushPose();
+-        p_369691_.getTransforms().getTransform(p_369628_).apply(p_365876_, p_366810_);
++        p_369691_ = p_369691_.applyTransform(p_369628_, p_366810_, p_365876_);
+         p_366810_.translate(-0.5F, -0.5F, p_368655_);
+         this.renderItem(p_368265_, p_369628_, p_366810_, p_363829_, p_363235_, p_368132_, p_369691_, p_366607_);
+         p_366810_.popPose();
+@@ -169,7 +_,8 @@
+         boolean p_366488_
+     ) {
+         if (!p_367824_.isCustomRenderer() && (!p_364096_.is(Items.TRIDENT) || p_366488_)) {
+-            RenderType rendertype = ItemBlockRenderTypes.getRenderType(p_364096_);
++            for (var model : p_367824_.getRenderPasses(p_364096_, true)) {
++            for (var rendertype : model.getRenderTypes(p_364096_, true)) {
+             VertexConsumer vertexconsumer;
+             if (hasAnimatedTexture(p_364096_) && p_364096_.hasFoil()) {
+                 PoseStack.Pose posestack$pose = p_370127_.last().copy();
+@@ -185,8 +_,11 @@
              }
  
--            p_115151_.getTransforms().getTransform(p_270188_).apply(p_115146_, p_115147_);
-+            p_115151_ = p_115151_.applyTransform(p_270188_, p_115147_, p_115146_);
-             p_115147_.translate(-0.5F, -0.5F, -0.5F);
-             if (!p_115151_.isCustomRenderer() && (!p_115144_.is(Items.TRIDENT) || flag)) {
-                 boolean flag1;
-@@ -129,7 +_,8 @@
-                     flag1 = true;
-                 }
+             this.renderModelLists(p_367824_, p_364096_, p_363416_, p_367651_, p_370127_, vertexconsumer);
++            }
++            }
+         } else {
+-            this.blockEntityRenderer.renderByItem(p_364096_, p_362035_, p_370127_, p_365365_, p_363416_, p_367651_);
++            var blockEntityRenderer = net.minecraftforge.client.extensions.common.IClientItemExtensions.of(p_364096_).getCustomRenderer();
++            blockEntityRenderer.renderByItem(p_364096_, p_362035_, p_370127_, p_365365_, p_363416_, p_367651_);
+         }
+     }
  
--                RenderType rendertype = ItemBlockRenderTypes.getRenderType(p_115144_, flag1);
-+                for (var model : p_115151_.getRenderPasses(p_115144_, flag1)) {
-+                for (var rendertype : model.getRenderTypes(p_115144_, flag1)) {
-                 VertexConsumer vertexconsumer;
-                 if (hasAnimatedTexture(p_115144_) && p_115144_.hasFoil()) {
-                     PoseStack.Pose posestack$pose = p_115147_.last().copy();
-@@ -146,9 +_,11 @@
-                     vertexconsumer = getFoilBuffer(p_115148_, rendertype, true, p_115144_.hasFoil());
-                 }
- 
--                this.renderModelLists(p_115151_, p_115144_, p_115149_, p_115150_, p_115147_, vertexconsumer);
-+                this.renderModelLists(model, p_115144_, p_115149_, p_115150_, p_115147_, vertexconsumer);
-+                }
-+                }
-             } else {
--                this.blockEntityRenderer.renderByItem(p_115144_, p_270188_, p_115147_, p_115148_, p_115149_, p_115150_);
-+                net.minecraftforge.client.extensions.common.IClientItemExtensions.of(p_115144_).getCustomRenderer().renderByItem(p_115144_, p_270188_, p_115147_, p_115148_, p_115149_, p_115150_);
-             }
- 
-             p_115147_.popPose();
-@@ -199,7 +_,7 @@
-             float f1 = (float)FastColor.ARGB32.red(i) / 255.0F;
-             float f2 = (float)FastColor.ARGB32.green(i) / 255.0F;
-             float f3 = (float)FastColor.ARGB32.blue(i) / 255.0F;
+@@ -232,7 +_,7 @@
+             float f1 = (float)ARGB.red(i) / 255.0F;
+             float f2 = (float)ARGB.green(i) / 255.0F;
+             float f3 = (float)ARGB.blue(i) / 255.0F;
 -            p_115164_.putBulkData(posestack$pose, bakedquad, f1, f2, f3, f, p_115167_, p_115168_);
 +            p_115164_.putBulkData(posestack$pose, bakedquad, f1, f2, f3, f, p_115167_, p_115168_, true);
          }
      }
  
-@@ -252,5 +_,9 @@
+@@ -275,6 +_,10 @@
      @Override
      public void onResourceManagerReload(ResourceManager p_115105_) {
-         this.itemModelShaper.rebuildCache();
+         this.itemModelShaper.invalidateCache();
 +    }
 +
 +    public BlockEntityWithoutLevelRenderer getBlockEntityRenderer() {
 +        return blockEntityRenderer;
      }
- }
+ 
+     @Nullable

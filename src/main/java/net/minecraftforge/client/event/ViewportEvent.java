@@ -80,6 +80,7 @@ public abstract class ViewportEvent extends Event {
         private float nearPlaneDistance;
         private FogShape fogShape;
 
+        @SuppressWarnings("resource")
         @ApiStatus.Internal
         public RenderFog(FogMode mode, FogType type, Camera camera, float partialTicks, float nearPlaneDistance, float farPlaneDistance, FogShape fogShape) {
             super(Minecraft.getInstance().gameRenderer, camera, partialTicks);
@@ -186,6 +187,7 @@ public abstract class ViewportEvent extends Event {
         private float green;
         private float blue;
 
+        @SuppressWarnings("resource")
         @ApiStatus.Internal
         public ComputeFogColor(Camera camera, float partialTicks, float red, float green, float blue) {
             super(Minecraft.getInstance().gameRenderer, camera, partialTicks);
@@ -327,10 +329,10 @@ public abstract class ViewportEvent extends Event {
      */
     public static class ComputeFov extends ViewportEvent {
         private final boolean usedConfiguredFov;
-        private double fov;
+        private float fov;
 
         @ApiStatus.Internal
-        public ComputeFov(GameRenderer renderer, Camera camera, double renderPartialTicks, double fov, boolean usedConfiguredFov) {
+        public ComputeFov(GameRenderer renderer, Camera camera, double renderPartialTicks, float fov, boolean usedConfiguredFov) {
             super(renderer, camera, renderPartialTicks);
             this.usedConfiguredFov = usedConfiguredFov;
             this.setFOV(fov);
@@ -339,7 +341,7 @@ public abstract class ViewportEvent extends Event {
         /**
          * {@return the raw field of view value}
          */
-        public double getFOV() {
+        public float getFOV() {
             return fov;
         }
 
@@ -348,7 +350,7 @@ public abstract class ViewportEvent extends Event {
          *
          * @param fov the new FOV value
          */
-        public void setFOV(double fov) {
+        public void setFOV(float fov) {
             this.fov = fov;
         }
 

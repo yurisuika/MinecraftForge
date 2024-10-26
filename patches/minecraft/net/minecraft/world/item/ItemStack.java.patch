@@ -1,15 +1,15 @@
 --- a/net/minecraft/world/item/ItemStack.java
 +++ b/net/minecraft/world/item/ItemStack.java
-@@ -92,7 +_,7 @@
+@@ -97,7 +_,7 @@
  import org.apache.commons.lang3.mutable.MutableBoolean;
  import org.slf4j.Logger;
  
 -public final class ItemStack implements DataComponentHolder {
 +public final class ItemStack implements DataComponentHolder, net.minecraftforge.common.extensions.IForgeItemStack {
-     public static final Codec<Holder<Item>> ITEM_NON_AIR_CODEC = BuiltInRegistries.ITEM
-         .holderByNameCodec()
-         .validate(
-@@ -347,13 +_,22 @@
+     public static final Codec<ItemStack> CODEC = Codec.lazyInitialized(
+         () -> RecordCodecBuilder.create(
+                 p_359412_ -> p_359412_.group(
+@@ -348,13 +_,22 @@
      }
  
      public InteractionResult useOn(UseOnContext p_41662_) {
@@ -30,10 +30,10 @@
              Item item = this.getItem();
 -            InteractionResult interactionresult = item.useOn(p_41662_);
 +            InteractionResult interactionresult = callback.apply(p_41662_);
-             if (player != null && interactionresult.indicateItemUse()) {
+             if (player != null && interactionresult instanceof InteractionResult.Success interactionresult$success && interactionresult$success.wasItemInteraction()) {
                  player.awardStat(Stats.ITEM_USED.get(item));
              }
-@@ -453,7 +_,13 @@
+@@ -507,7 +_,13 @@
                  p_41623_,
                  serverlevel,
                  p_41624_ instanceof ServerPlayer serverplayer ? serverplayer : null,
@@ -48,7 +48,7 @@
              );
          }
      }
-@@ -780,6 +_,8 @@
+@@ -856,6 +_,8 @@
                  list.add(DISABLED_ITEM_TOOLTIP);
              }
  
@@ -57,25 +57,7 @@
              return list;
          }
      }
-@@ -923,7 +_,7 @@
-         if (!itemattributemodifiers.modifiers().isEmpty()) {
-             itemattributemodifiers.forEach(p_344758_, p_342345_);
-         } else {
--            this.getItem().getDefaultAttributeModifiers().forEach(p_344758_, p_342345_);
-+            this.getDefaultAttributeModifiers().forEach(p_344758_, p_342345_);
-         }
- 
-         EnchantmentHelper.forEachModifier(this, p_344758_, p_342345_);
-@@ -934,7 +_,7 @@
-         if (!itemattributemodifiers.modifiers().isEmpty()) {
-             itemattributemodifiers.forEach(p_331036_, p_334430_);
-         } else {
--            this.getItem().getDefaultAttributeModifiers().forEach(p_331036_, p_334430_);
-+            this.getItem().getAttributeModifiers(p_331036_, this).forEach(p_331036_, p_334430_);
-         }
- 
-         EnchantmentHelper.forEachModifier(this, p_331036_, p_334430_);
-@@ -1011,6 +_,7 @@
+@@ -1082,6 +_,7 @@
          this.getItem().onUseTick(p_41732_, p_41733_, this, p_41734_);
      }
  

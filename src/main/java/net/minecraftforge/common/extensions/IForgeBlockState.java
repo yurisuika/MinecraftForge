@@ -575,7 +575,7 @@ public interface IForgeBlockState {
      * @param pos Block position in level
      * @param explosion The explosion instance affecting the block
      */
-    default void onBlockExploded(Level level, BlockPos pos, Explosion explosion) {
+    default void onBlockExploded(ServerLevel level, BlockPos pos, Explosion explosion) {
         self().getBlock().onBlockExploded(self(), level, pos, explosion);
     }
 

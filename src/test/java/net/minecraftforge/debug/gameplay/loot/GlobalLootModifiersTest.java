@@ -48,6 +48,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemBlockStatePropertyCondition;
@@ -60,7 +61,6 @@ import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.common.loot.LootModifier;
 import net.minecraftforge.common.loot.LootTableIdCondition;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.test.BaseTestMod;
@@ -103,9 +103,9 @@ public class GlobalLootModifiersTest extends BaseTestMod {
         });
 
     private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
-    private static final RegistryObject<Block> TEST_BLOCK = BLOCKS.register("test", () -> new Block(BlockBehaviour.Properties.of()));
+    private static final RegistryObject<Block> TEST_BLOCK = BLOCKS.register("test", () -> new Block(name(MODID, "test", BlockBehaviour.Properties.of())));
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
-    private static final RegistryObject<Item> TEST_ITEM = ITEMS.register("test", () -> new BlockItem(TEST_BLOCK.get(), new Item.Properties()));
+    private static final RegistryObject<Item> TEST_ITEM = ITEMS.register("test", () -> new BlockItem(TEST_BLOCK.get(), name(MODID, "test", new Item.Properties())));
 
     public GlobalLootModifiersTest(FMLJavaModLoadingContext context) {
         super(context);
@@ -211,6 +211,7 @@ public class GlobalLootModifiersTest extends BaseTestMod {
         @Override
         protected void start(HolderLookup.Provider registries) {
             var smelt = registries.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(SMELT);
+            var items = registries.lookupOrThrow(Registries.ITEM);
 
             // Tested vis breaking a log and checking if we get charcoal
             add("smelting", new SmeltingEnchantmentModifier(
@@ -231,7 +232,7 @@ public class GlobalLootModifiersTest extends BaseTestMod {
             // This has no game test because it relies on random number generation and I can't be bothered to try and force that right now.
             add("wheat_harvest", new WheatSeedsConverterModifier(
                 new LootItemCondition[] {
-                    MatchTool.toolMatches(ItemPredicate.Builder.item().of(Items.SHEARS)).build(),
+                    MatchTool.toolMatches(ItemPredicate.Builder.item().of(items, Items.SHEARS)).build(),
                     LootItemBlockStatePropertyCondition.hasBlockStateProperties(Blocks.WHEAT).build()
                 },
                 3, Items.WHEAT_SEEDS, Items.WHEAT)
@@ -240,14 +241,14 @@ public class GlobalLootModifiersTest extends BaseTestMod {
             // Tested by verifying that we drop 2 test blocks when broken instead of the default 1
             add("multiply_loot", new MultiplyDropsModifier(
                 new LootItemCondition[] {
-                    LootTableIdCondition.builder(TEST_BLOCK.get().getLootTable().location()).build()
+                    LootTableIdCondition.builder(TEST_BLOCK.get().getLootTable().get().location()).build()
                 }, 2)
             );
 
             // Bamboo silk harvests everything, Tested by breaking glass and seeing if we get glass back.
             add("bamboo_silk", new SilkTouchTestModifier(
                 new LootItemCondition[] {
-                    MatchTool.toolMatches(ItemPredicate.Builder.item().of(Items.BAMBOO)).build()
+                    MatchTool.toolMatches(ItemPredicate.Builder.item().of(items, Items.BAMBOO)).build()
                 })
             );
         }
@@ -294,19 +295,20 @@ public class GlobalLootModifiersTest extends BaseTestMod {
 
         @NotNull
         @Override
-        public ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+        public ObjectArrayList<ItemStack> doApply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
             var ret = new ObjectArrayList<ItemStack>();
             generatedLoot.forEach(stack -> ret.add(smelt(stack, context)));
             return ret;
         }
 
         private static ItemStack smelt(ItemStack stack, LootContext context) {
-            var mgr = context.getLevel().getRecipeManager();
+            var mgr = context.getLevel().recipeAccess();
             var reg = context.getLevel().registryAccess();
+            var inv = new SingleRecipeInput(stack);
             return mgr
-                .getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(stack), context.getLevel())
+                .getRecipeFor(RecipeType.SMELTING, inv, context.getLevel())
                 .map(holder -> holder.value())
-                .map(recipe -> recipe.getResultItem(reg))
+                .map(recipe -> recipe.assemble(inv, reg))
                 .filter(itemStack -> !itemStack.isEmpty())
                 .map(itemStack -> ItemHandlerHelper.copyStackWithSize(itemStack, stack.getCount() * itemStack.getCount()))
                 .orElse(stack);
@@ -335,21 +337,19 @@ public class GlobalLootModifiersTest extends BaseTestMod {
 
         @NotNull
         @Override
-        public ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-            var ctxTool = context.getParamOrNull(LootContextParams.TOOL);
+        public ObjectArrayList<ItemStack> doApply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+            var ctxTool = context.getOptionalParameter(LootContextParams.TOOL);
             //return early if silk-touch is already applied (otherwise we'll get stuck in an infinite loop).
             var silk = context.getLevel().holderLookup(Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH);
             var silkLevel = EnchantmentHelper.getItemEnchantmentLevel(silk, ctxTool);
             if (ctxTool == null || ctxTool.isEmpty() || silkLevel > 0) return generatedLoot;
             var fakeTool = ctxTool.copy();
             fakeTool.enchant(silk, 1);
-            var params = new LootParams.Builder(context.getLevel())
+            var params = new LootParams.Builder(context.getParams())
                 .withParameter(LootContextParams.TOOL, fakeTool)
-                .create(LootContextParamSets.EMPTY);
+                .create();
 
-            return context.getLevel().getServer().reloadableRegistries()
-                .getLootTable(context.getParamOrNull(LootContextParams.BLOCK_STATE).getBlock().getLootTable())
-                .getRandomItems(params);
+            return table.getRandomItems(params);
         }
 
         @Override
@@ -383,7 +383,7 @@ public class GlobalLootModifiersTest extends BaseTestMod {
 
         @NotNull
         @Override
-        public ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+        public ObjectArrayList<ItemStack> doApply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
             //
             // Additional conditions can be checked, though as much as possible should be parameterized via JSON data.
             // It is better to write a new ILootCondition implementation than to do things here.
@@ -423,11 +423,11 @@ public class GlobalLootModifiersTest extends BaseTestMod {
         }
 
         @Override
-        protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-            return generatedLoot.stream()
-                .map(ItemStack::copy)
-                .peek(stack -> stack.setCount(Math.min(stack.getMaxStackSize(), stack.getCount() * this.multiplicationFactor)))
-                .collect(Collectors.toCollection(ObjectArrayList::new));
+        protected ObjectArrayList<ItemStack> doApply(LootTable table, ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+            var ret = new ObjectArrayList<ItemStack>();
+            for (var orig : generatedLoot)
+                ret.add(orig.copyWithCount(Math.min(orig.getMaxStackSize(), orig.getCount() * this.multiplicationFactor)));
+            return ret;
         }
 
         @Override

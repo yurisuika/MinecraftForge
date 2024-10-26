@@ -8,20 +8,15 @@ package net.minecraftforge.fml;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.config.IConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.loading.FMLLoader;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
-public class ModLoadingContext
-{
+public class ModLoadingContext {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final ThreadLocal<ModLoadingContext> context = ThreadLocal.withInitial(ModLoadingContext::new);
     private ModContainer activeContainer;
     private Object languageExtension;
-    private ModLoadingStage stage;
 
     /**
      * @deprecated Use the context provided by your language loader in your mod's constructor

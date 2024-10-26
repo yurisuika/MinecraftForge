@@ -8,19 +8,15 @@ package net.minecraftforge.debug.gameplay.item;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.food.Foods;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GatherComponentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.test.BaseTestMod;
-
-import java.util.List;
-import java.util.Optional;
 
 @GameTestHolder("forge." + GatherComponentsEventTest.MOD_ID)
 @Mod(GatherComponentsEventTest.MOD_ID)
@@ -35,14 +31,7 @@ public class GatherComponentsEventTest extends BaseTestMod {
 
     public void onItem(GatherComponentsEvent.Item itemEvent) {
         if (!itemEvent.getOriginalComponentMap().has(DataComponents.FOOD) && itemEvent.getOwner() == Items.IRON_NUGGET) {
-            itemEvent.register(DataComponents.FOOD, new FoodProperties(
-                    2,
-                    7,
-                    true,
-                    3,
-                    Optional.empty(),
-                    List.of()
-            ));
+            itemEvent.register(DataComponents.FOOD, Foods.APPLE);
         }
     }
 

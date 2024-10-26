@@ -23,14 +23,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class MinecraftForge
-{
-
+public class MinecraftForge {
     /**
      * The EventBus for all the Forge Events.
      *
@@ -46,8 +43,7 @@ public class MinecraftForge
    /**
     * Method invoked by FML before any other mods are loaded.
     */
-   public static void initialize()
-   {
+   public static void initialize() {
        LOGGER.info(FORGE,"MinecraftForge v{} Initialized", ForgeVersion.getVersion());
 
        UsernameCache.load();

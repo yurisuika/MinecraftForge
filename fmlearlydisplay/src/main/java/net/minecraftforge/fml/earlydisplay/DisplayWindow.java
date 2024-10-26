@@ -22,9 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.Desktop;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -87,6 +85,7 @@ public class DisplayWindow implements ImmediateWindowProvider {
     private ScheduledFuture<?> initializationFuture;
 
     private PerformanceInfo performanceInfo;
+    @SuppressWarnings("unused")
     private ScheduledFuture<?> performanceTick;
     // The GL ID of the window. Used for all operations
     private long window;
@@ -259,7 +258,11 @@ public class DisplayWindow implements ImmediateWindowProvider {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        this.elements.removeIf(element -> !element.render(context, framecount));
+        for (var itr = this.elements.iterator(); itr.hasNext(); ) {
+            var element = itr.next();
+            if (!element.render(context, framecount))
+                itr.remove();
+        }
         if (animationTimerTrigger.compareAndSet(true, false)) // we only increment the framecount on a periodic basis
             framecount++;
     }
@@ -302,13 +305,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
     }
 
     private void crashElegantly(String errorDetails) {
-        String qrText;
-        try (var is = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/glfailure.txt")))) {
-            qrText = is.lines().collect(Collectors.joining("\n"));
-        } catch (IOException ioe) {
-            qrText = "";
-        }
-
         StringBuilder msgBuilder = new StringBuilder(2000);
         msgBuilder.append("Failed to initialize graphics window with current settings.\n");
         msgBuilder.append("\n\n");
@@ -407,13 +403,13 @@ public class DisplayWindow implements ImmediateWindowProvider {
             if (showHelpLog && versidx == 0) {
                 LOGGER.info("""
                 If this message is the only thing at the bottom of your log before a crash, you probably have a driver issue.
-                
+
                 Possible solutions:
                 A) Make sure Minecraft is set to prefer high performance graphics in the OS and/or driver control panel
                 B) Check for driver updates on the graphics brand's website
                 C) Try reinstalling your graphics drivers
                 D) If still not working after trying all of the above, ask for further help on the Forge forums or Discord
-                
+
                 You can safely ignore this message if the game starts up successfully.""");
             }
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSIONS[versidx][0]); // we try our versions one at a time
@@ -495,10 +491,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
         this.fbWidth = x[0];
         this.fbHeight = y[0];
         glfwPollEvents();
-    }
-
-    private void badWindowHandler(final int code, final long desc) {
-        LOGGER.error("Got error from GLFW window init: "+code+ " "+MemoryUtil.memUTF8(desc));
     }
 
     private void winResize(long window, int width, int height) {
@@ -634,7 +626,6 @@ public class DisplayWindow implements ImmediateWindowProvider {
 
     public void addMojangTexture(final int textureId) {
         this.elements.add(0, RenderElement.mojang(textureId, framecount));
-//        this.elements.get(0).retire(framecount + 1);
     }
 
     public void close() {

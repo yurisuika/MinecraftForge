@@ -100,4 +100,9 @@ public record AnyHolderSet<T>(HolderLookup.RegistryLookup<T> registryLookup) imp
     public String toString() {
         return "AnySet(" + this.registryLookup.key() + ")";
     }
+
+    @Override
+    public boolean isBound() {
+        return true;
+    }
 }

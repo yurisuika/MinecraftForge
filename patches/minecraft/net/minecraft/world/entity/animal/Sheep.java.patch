@@ -1,48 +1,55 @@
 --- a/net/minecraft/world/entity/animal/Sheep.java
 +++ b/net/minecraft/world/entity/animal/Sheep.java
-@@ -212,7 +_,7 @@
+@@ -161,7 +_,7 @@
      @Override
      public InteractionResult mobInteract(Player p_29853_, InteractionHand p_29854_) {
          ItemStack itemstack = p_29853_.getItemInHand(p_29854_);
 -        if (itemstack.is(Items.SHEARS)) {
 +        if (false && itemstack.is(Items.SHEARS)) { // Forge: Moved to onSheared
-             if (!this.level().isClientSide && this.readyForShearing()) {
-                 this.shear(SoundSource.PLAYERS);
+             if (this.level() instanceof ServerLevel serverlevel && this.readyForShearing()) {
+                 this.shear(serverlevel, SoundSource.PLAYERS, itemstack);
                  this.gameEvent(GameEvent.SHEAR, p_29853_);
-@@ -228,12 +_,24 @@
+@@ -177,12 +_,26 @@
  
      @Override
-     public void shear(SoundSource p_29819_) {
-+        dropShearedItems(shearInternal(p_29819_));
+     public void shear(ServerLevel p_365174_, SoundSource p_29819_, ItemStack p_361058_) {
++        dropItems(p_365174_, shearInternal(p_365174_, p_29819_, p_361058_));
 +    }
 +
-+    private java.util.List<ItemStack> shearInternal(SoundSource p_29819_) {
-         this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR, p_29819_, 1.0F, 1.0F);
-         this.setSheared(true);
-         int i = 1 + this.random.nextInt(3);
- 
++    private java.util.List<ItemStack> shearInternal(ServerLevel p_365174_, SoundSource p_29819_, ItemStack p_361058_) {
 +        var ret = new java.util.ArrayList<ItemStack>();
-         for (int j = 0; j < i; j++) {
--            ItemEntity itementity = this.spawnAtLocation(ITEM_BY_DYE.get(this.getColor()), 1);
-+            ret.add(new ItemStack(ITEM_BY_DYE.get(this.getColor())));
-+        }
+         p_365174_.playSound(null, this, SoundEvents.SHEEP_SHEAR, p_29819_, 1.0F, 1.0F);
+         this.dropFromShearingLootTable(
+             p_365174_,
+             BuiltInLootTables.SHEAR_SHEEP,
+             p_361058_,
+             (p_359182_, p_359183_) -> {
++                ret.add(p_359183_);
++            }
++        );
++        this.setSheared(true);
 +        return ret;
 +    }
 +
-+    private void dropShearedItems(java.util.List<ItemStack> items) {
-+        for (var stack : items) {
-+            ItemEntity itementity = this.spawnAtLocation(stack, 1);
-             if (itementity != null) {
-                 itementity.setDeltaMovement(
-                     itementity.getDeltaMovement()
-@@ -366,5 +_,10 @@
- 
-     private static CraftingInput makeCraftInput(DyeColor p_344668_, DyeColor p_344678_) {
-         return CraftingInput.of(2, 1, List.of(new ItemStack(DyeItem.byColor(p_344668_)), new ItemStack(DyeItem.byColor(p_344678_))));
++    private void dropItems(ServerLevel p_359182_, java.util.Collection<ItemStack> items) {
++            for (var p_359183_ : items) {
+                 for (int i = 0; i < p_359183_.getCount(); i++) {
+                     ItemEntity itementity = this.spawnAtLocation(p_359182_, p_359183_.copyWithCount(1), 1.0F);
+                     if (itementity != null) {
+@@ -197,8 +_,14 @@
+                     }
+                 }
+             }
+-        );
+-        this.setSheared(true);
 +    }
 +
 +    @Override
 +    public java.util.List<ItemStack> onSheared(@Nullable Player player, ItemStack item, Level world, BlockPos pos, int fortune) {
-+       return shearInternal(player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS);
++        if (world instanceof ServerLevel server) {
++            return shearInternal(server, player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS, item);
++        }
++        return java.util.Collections.emptyList();
      }
- }
+ 
+     @Override

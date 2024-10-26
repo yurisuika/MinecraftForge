@@ -1,67 +1,36 @@
 --- a/net/minecraft/client/renderer/entity/layers/HumanoidArmorLayer.java
 +++ b/net/minecraft/client/renderer/entity/layers/HumanoidArmorLayer.java
-@@ -66,22 +_,24 @@
-             if (armoritem.getEquipmentSlot() == p_117122_) {
-                 this.getParentModel().copyPropertiesTo(p_117124_);
-                 this.setPartVisibility(p_117124_, p_117122_);
-+                net.minecraft.client.model.Model model = getArmorModelHook(p_117121_, itemstack, p_117122_, p_117124_);
-                 boolean flag = this.usesInnerModel(p_117122_);
-                 ArmorMaterial armormaterial = armoritem.getMaterial().value();
-                 int i = itemstack.is(ItemTags.DYEABLE) ? FastColor.ARGB32.opaque(DyedItemColor.getOrDefault(itemstack, -6265536)) : -1;
+@@ -45,22 +_,23 @@
+     }
  
-                 for (ArmorMaterial.Layer armormaterial$layer : armormaterial.layers()) {
-                     int j = armormaterial$layer.dyeable() ? i : -1;
--                    this.renderModel(p_117119_, p_117120_, p_117123_, p_117124_, j, armormaterial$layer.texture(flag));
-+                    var texture = net.minecraftforge.client.ForgeHooksClient.getArmorTexture(p_117121_, itemstack, p_117122_, armormaterial$layer, flag);
-+                    this.renderModel(p_117119_, p_117120_, p_117123_, model, j, texture);
-                 }
+     public void render(PoseStack p_117085_, MultiBufferSource p_117086_, int p_117087_, S p_364101_, float p_117089_, float p_117090_) {
+-        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.chestItem, EquipmentSlot.CHEST, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.CHEST));
+-        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.legsItem, EquipmentSlot.LEGS, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.LEGS));
+-        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.feetItem, EquipmentSlot.FEET, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.FEET));
+-        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.headItem, EquipmentSlot.HEAD, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.HEAD));
++        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.chestItem, EquipmentSlot.CHEST, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.CHEST), p_364101_);
++        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.legsItem, EquipmentSlot.LEGS, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.LEGS), p_364101_);
++        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.feetItem, EquipmentSlot.FEET, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.FEET), p_364101_);
++        this.renderArmorPiece(p_117085_, p_117086_, p_364101_.headItem, EquipmentSlot.HEAD, p_117087_, this.getArmorModel(p_364101_, EquipmentSlot.HEAD), p_364101_);
+     }
  
-                 ArmorTrim armortrim = itemstack.get(DataComponents.TRIM);
-                 if (armortrim != null) {
--                    this.renderTrim(armoritem.getMaterial(), p_117119_, p_117120_, p_117123_, armortrim, p_117124_, flag);
-+                    this.renderTrim(armoritem.getMaterial(), p_117119_, p_117120_, p_117123_, armortrim, model, flag);
-                 }
- 
-                 if (itemstack.hasFoil()) {
--                    this.renderGlint(p_117119_, p_117120_, p_117123_, p_117124_);
-+                    this.renderGlint(p_117119_, p_117120_, p_117123_, model);
-                 }
-             }
+-    private void renderArmorPiece(PoseStack p_117119_, MultiBufferSource p_117120_, ItemStack p_366444_, EquipmentSlot p_117122_, int p_117123_, A p_117124_) {
++    private void renderArmorPiece(PoseStack p_117119_, MultiBufferSource p_117120_, ItemStack p_366444_, EquipmentSlot p_117122_, int p_117123_, A p_117124_, S state) {
+         Equippable equippable = p_366444_.get(DataComponents.EQUIPPABLE);
+         if (equippable != null && shouldRender(equippable, p_117122_)) {
+             this.getParentModel().copyPropertiesTo(p_117124_);
+             this.setPartVisibility(p_117124_, p_117122_);
++            var model = this.getArmorModel(state, p_117122_, p_366444_, p_117124_);
+             ResourceLocation resourcelocation = equippable.model().orElseThrow();
+             EquipmentModel.LayerType equipmentmodel$layertype = this.usesInnerModel(p_117122_)
+                 ? EquipmentModel.LayerType.HUMANOID_LEGGINGS
+                 : EquipmentModel.LayerType.HUMANOID;
+-            this.equipmentRenderer.renderLayers(equipmentmodel$layertype, resourcelocation, p_117124_, p_366444_, p_117119_, p_117120_, p_117123_);
++            this.equipmentRenderer.renderLayers(equipmentmodel$layertype, resourcelocation, model, p_366444_, p_117119_, p_117120_, p_117123_);
          }
-@@ -111,12 +_,20 @@
      }
  
-     private void renderModel(PoseStack p_289664_, MultiBufferSource p_289689_, int p_289681_, A p_289658_, int p_342257_, ResourceLocation p_328978_) {
-+        renderModel(p_289664_, p_289689_, p_289681_, (net.minecraft.client.model.Model)p_289658_, p_342257_, p_328978_);
-+    }
-+
-+    private void renderModel(PoseStack p_289664_, MultiBufferSource p_289689_, int p_289681_, net.minecraft.client.model.Model p_289658_, int p_342257_, ResourceLocation p_328978_) {
-         VertexConsumer vertexconsumer = p_289689_.getBuffer(RenderType.armorCutoutNoCull(p_328978_));
-         p_289658_.renderToBuffer(p_289664_, vertexconsumer, p_289681_, OverlayTexture.NO_OVERLAY, p_342257_);
-     }
- 
-+    private void renderTrim(Holder<ArmorMaterial> p_331988_, PoseStack p_289687_, MultiBufferSource p_289643_, int p_289683_, ArmorTrim p_289692_, A p_289663_, boolean p_289651_) {
-+        renderTrim(p_331988_, p_289687_, p_289643_, p_289683_, p_289692_, (net.minecraft.client.model.Model)p_289663_, p_289651_);
-+    }
-+
-     private void renderTrim(
--        Holder<ArmorMaterial> p_331988_, PoseStack p_289687_, MultiBufferSource p_289643_, int p_289683_, ArmorTrim p_289692_, A p_289663_, boolean p_289651_
-+        Holder<ArmorMaterial> p_331988_, PoseStack p_289687_, MultiBufferSource p_289643_, int p_289683_, ArmorTrim p_289692_, net.minecraft.client.model.Model p_289663_, boolean p_289651_
-     ) {
-         TextureAtlasSprite textureatlassprite = this.armorTrimAtlas.getSprite(p_289651_ ? p_289692_.innerTexture(p_331988_) : p_289692_.outerTexture(p_331988_));
-         VertexConsumer vertexconsumer = textureatlassprite.wrap(p_289643_.getBuffer(Sheets.armorTrimsSheet(p_289692_.pattern().value().decal())));
-@@ -124,6 +_,10 @@
-     }
- 
-     private void renderGlint(PoseStack p_289673_, MultiBufferSource p_289654_, int p_289649_, A p_289659_) {
-+        renderGlint(p_289673_, p_289654_, p_289649_, (net.minecraft.client.model.Model)p_289659_);
-+    }
-+
-+    private void renderGlint(PoseStack p_289673_, MultiBufferSource p_289654_, int p_289649_, net.minecraft.client.model.Model p_289659_) {
-         p_289659_.renderToBuffer(p_289673_, p_289654_.getBuffer(RenderType.armorEntityGlint()), p_289649_, OverlayTexture.NO_OVERLAY);
-     }
- 
-@@ -133,5 +_,12 @@
+@@ -97,5 +_,12 @@
  
      private boolean usesInnerModel(EquipmentSlot p_117129_) {
          return p_117129_ == EquipmentSlot.LEGS;
@@ -70,7 +39,7 @@
 +    /**
 +     * Hook to allow item-sensitive armor model. for HumanoidArmorLayer.
 +     */
-+    protected net.minecraft.client.model.Model getArmorModelHook(T entity, ItemStack itemStack, EquipmentSlot slot, A model) {
-+       return net.minecraftforge.client.ForgeHooksClient.getArmorModel(entity, itemStack, slot, model);
++    protected net.minecraft.client.model.Model getArmorModel(S state, EquipmentSlot slot, ItemStack itemStack, A _default) {
++       return net.minecraftforge.client.ForgeHooksClient.getArmorModel(state, itemStack, slot, _default);
      }
  }

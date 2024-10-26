@@ -3,7 +3,7 @@
 @@ -65,8 +_,12 @@
      @Override
      public ItemStack run(ItemStack p_344964_, LootContext p_345394_) {
-         Entity entity = p_345394_.getParamOrNull(LootContextParams.ATTACKING_ENTITY);
+         Entity entity = p_345394_.getOptionalParameter(LootContextParams.ATTACKING_ENTITY);
 -        if (entity instanceof LivingEntity livingentity) {
 -            int i = EnchantmentHelper.getEnchantmentLevel(this.enchantment, livingentity);
 +        int i = 0;

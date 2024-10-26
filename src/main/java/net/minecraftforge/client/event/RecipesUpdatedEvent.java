@@ -5,6 +5,7 @@
 
 package net.minecraftforge.client.event;
 
+import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
@@ -13,28 +14,25 @@ import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
- * Fired when the {@link RecipeManager} has received and synced the recipes from the server to the client.
+ * Fired when the {@link ClientRecipeBook} has updated information about recipes from the server to the client.
  *
  * <p>This event is not {@linkplain Cancelable cancellable}, and does not {@linkplain HasResult have a result}.</p>
  *
  * <p>This event is fired on the {@linkplain MinecraftForge#EVENT_BUS main Forge event bus},
  * only on the {@linkplain LogicalSide#CLIENT logical client}.</p>
  */
-public class RecipesUpdatedEvent extends Event
-{
-    private final RecipeManager recipeManager;
+public class RecipesUpdatedEvent extends Event {
+    private final ClientRecipeBook recipeBook;
 
     @ApiStatus.Internal
-    public RecipesUpdatedEvent(RecipeManager recipeManager)
-    {
-        this.recipeManager = recipeManager;
+    public RecipesUpdatedEvent(ClientRecipeBook recipeBook) {
+        this.recipeBook = recipeBook;
     }
 
     /**
      * {@return the recipe manager}
      */
-    public RecipeManager getRecipeManager()
-    {
-        return recipeManager;
+    public ClientRecipeBook getRecipeBook() {
+        return recipeBook;
     }
 }

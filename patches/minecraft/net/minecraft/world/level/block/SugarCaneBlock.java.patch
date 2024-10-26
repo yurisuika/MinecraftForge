@@ -25,7 +25,7 @@
              }
          }
      }
-@@ -79,6 +_,8 @@
+@@ -88,6 +_,8 @@
  
      @Override
      protected boolean canSurvive(BlockState p_57175_, LevelReader p_57176_, BlockPos p_57177_) {
@@ -34,7 +34,7 @@
          BlockState blockstate = p_57176_.getBlockState(p_57177_.below());
          if (blockstate.is(this)) {
              return true;
-@@ -89,7 +_,7 @@
+@@ -98,7 +_,7 @@
                  for (Direction direction : Direction.Plane.HORIZONTAL) {
                      BlockState blockstate1 = p_57176_.getBlockState(blockpos.relative(direction));
                      FluidState fluidstate = p_57176_.getFluidState(blockpos.relative(direction));
@@ -43,7 +43,7 @@
                          return true;
                      }
                  }
-@@ -102,5 +_,15 @@
+@@ -111,5 +_,15 @@
      @Override
      protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> p_57186_) {
          p_57186_.add(AGE);

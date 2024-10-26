@@ -10,10 +10,15 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab.TabVisibility;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -46,6 +51,14 @@ public abstract class BaseTestMod {
 
     protected static ResourceLocation rl(String namespace, String path) {
         return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    }
+
+    protected static BlockBehaviour.Properties name(String namespace, String name, BlockBehaviour.Properties peops) {
+        return peops.setId(ResourceKey.create(Registries.BLOCK, rl(namespace, name)));
+    }
+
+    protected static Item.Properties name(String namespace, String name, Item.Properties peops) {
+        return peops.setId(ResourceKey.create(Registries.ITEM, rl(namespace, name)));
     }
 
     protected void testItem(Function<HolderLookup.Provider, ItemStack> supplier) {

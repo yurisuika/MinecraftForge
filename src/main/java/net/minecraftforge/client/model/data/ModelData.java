@@ -33,19 +33,16 @@ import java.util.Set;
  * @see BakedModel#getQuads(BlockState, Direction, RandomSource, ModelData, RenderType)
  * @see BakedModel#getModelData(BlockAndTintGetter, BlockPos, BlockState, ModelData)
  */
-public final class ModelData
-{
+public final class ModelData {
     public static final ModelData EMPTY = ModelData.builder().build();
 
     private final Map<ModelProperty<?>, Object> properties;
 
-    private ModelData(Map<ModelProperty<?>, Object> properties)
-    {
+    private ModelData(Map<ModelProperty<?>, Object> properties) {
         this.properties = properties;
     }
 
-    public Set<ModelProperty<?>> getProperties()
-    {
+    public Set<ModelProperty<?>> getProperties() {
         return properties.keySet();
     }
 
@@ -54,45 +51,37 @@ public final class ModelData
         return properties.containsKey(property);
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
-    public <T> T get(ModelProperty<T> property)
-    {
-        return (T) properties.get(property);
+    public <T> T get(ModelProperty<T> property) {
+        return (T)properties.get(property);
     }
 
-    public Builder derive()
-    {
+    public Builder derive() {
         return new Builder(this);
     }
 
-    public static Builder builder()
-    {
+    public static Builder builder() {
         return new Builder(null);
     }
 
-    public static final class Builder
-    {
+    public static final class Builder {
         private final Map<ModelProperty<?>, Object> properties = new IdentityHashMap<>();
 
-        private Builder(@Nullable ModelData parent)
-        {
+        private Builder(@Nullable ModelData parent) {
             if (parent != null)
-            {
                 properties.putAll(parent.properties);
-            }
         }
 
         @Contract("_, _ -> this")
-        public <T> Builder with(ModelProperty<T> property, T value)
-        {
+        public <T> Builder with(ModelProperty<T> property, T value) {
             Preconditions.checkState(property.test(value), "The provided value is invalid for this property.");
             properties.put(property, value);
             return this;
         }
 
         @Contract("-> new")
-        public ModelData build()
-        {
+        public ModelData build() {
             return new ModelData(Collections.unmodifiableMap(properties));
         }
     }

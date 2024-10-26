@@ -30,6 +30,7 @@ import java.util.List;
 /**
  * Extension interface for {@link IForgeBakedModel}.
  */
+@SuppressWarnings("deprecation")
 public interface IForgeBakedModel {
     private BakedModel self() {
         return (BakedModel)this;
@@ -89,7 +90,7 @@ public interface IForgeBakedModel {
      * @see #getRenderPasses(ItemStack, boolean)
      */
     default List<RenderType> getRenderTypes(ItemStack itemStack, boolean fabulous) {
-        return List.of(RenderTypeHelper.getFallbackItemRenderType(itemStack, self(), fabulous));
+        return List.of(RenderTypeHelper.getFallbackItemRenderType(itemStack, self()));
     }
 
     /**

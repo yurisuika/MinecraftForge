@@ -219,8 +219,8 @@ public final class RegistryObject<T> implements Supplier<T> {
 
         var mapped = registry instanceof MappedRegistry m ? m : null;
         if (registry.containsKey(this.name)) {
-            this.value = registry.get(this.name);
-            this.holder = () -> ((Registry<T>)registry).getHolder(this.key).orElse(null);
+            this.value = registry.getValue(this.name);
+            this.holder = () -> ((Registry<T>)registry).get(this.key).orElse(null);
         } else if (mapped != null && !mapped.isIntrusive()) {
             this.value = null;
             this.holder = () -> mapped.createRegistrationLookup().getOrThrow(this.key);
@@ -241,7 +241,7 @@ public final class RegistryObject<T> implements Supplier<T> {
             return;
         }
 
-        Registry<? extends T> vanillaRegistry = (Registry<? extends T>) BuiltInRegistries.REGISTRY.get(registryName);
+        Registry<? extends T> vanillaRegistry = (Registry<? extends T>) BuiltInRegistries.REGISTRY.getValue(registryName);
         if (vanillaRegistry != null) {
             updateReference(vanillaRegistry);
             return;

@@ -1,16 +1,15 @@
 --- a/net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 +++ b/net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
-@@ -170,15 +_,18 @@
+@@ -171,15 +_,18 @@
          for (int i = 0; i < 3; i++) {
              p_155293_.set(i, potionbrewing.mix(itemstack, p_155293_.get(i)));
          }
 +        net.minecraftforge.event.ForgeEventFactory.onPotionBrewed(p_155293_);
  
 -        itemstack.shrink(1);
--        if (itemstack.getItem().hasCraftingRemainingItem()) {
--            ItemStack itemstack1 = new ItemStack(itemstack.getItem().getCraftingRemainingItem());
-+        if (itemstack.hasCraftingRemainingItem()) {
-+            ItemStack itemstack1 = itemstack.getCraftingRemainingItem();
+-        ItemStack itemstack1 = itemstack.getItem().getCraftingRemainder();
++        ItemStack itemstack1 = itemstack.getCraftingRemainder();
+         if (!itemstack1.isEmpty()) {
 +            itemstack.shrink(1);
              if (itemstack.isEmpty()) {
                  itemstack = itemstack1;
@@ -22,7 +21,7 @@
          }
  
          p_155293_.set(3, itemstack);
-@@ -211,6 +_,9 @@
+@@ -212,6 +_,9 @@
          if (p_59017_ == 3) {
              PotionBrewing potionbrewing = this.level != null ? this.level.potionBrewing() : PotionBrewing.EMPTY;
              return potionbrewing.isIngredient(p_59018_);
@@ -31,8 +30,8 @@
 +            return this.getItem(p_59017_).isEmpty() && potionbrewing.isValidInput(p_59018_);
          } else {
              return p_59017_ == 4
-                 ? p_59018_.is(Items.BLAZE_POWDER)
-@@ -246,5 +_,34 @@
+                 ? p_59018_.is(ItemTags.BREWING_FUEL)
+@@ -247,5 +_,34 @@
      @Override
      protected AbstractContainerMenu createMenu(int p_58990_, Inventory p_58991_) {
          return new BrewingStandMenu(p_58990_, p_58991_, this, this.dataAccess);

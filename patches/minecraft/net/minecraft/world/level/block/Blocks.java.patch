@@ -1,18 +1,18 @@
 --- a/net/minecraft/world/level/block/Blocks.java
 +++ b/net/minecraft/world/level/block/Blocks.java
-@@ -790,7 +_,7 @@
-     public static final Block RED_BED = register("red_bed", bed(DyeColor.RED));
-     public static final Block BLACK_BED = register("black_bed", bed(DyeColor.BLACK));
-     public static final Block POWERED_RAIL = register(
--        "powered_rail", new PoweredRailBlock(BlockBehaviour.Properties.of().noCollission().strength(0.7F).sound(SoundType.METAL))
-+        "powered_rail", new PoweredRailBlock(BlockBehaviour.Properties.of().noCollission().strength(0.7F).sound(SoundType.METAL), true)
+@@ -2800,7 +_,7 @@
      );
-     public static final Block DETECTOR_RAIL = register(
-         "detector_rail", new DetectorRailBlock(BlockBehaviour.Properties.of().noCollission().strength(0.7F).sound(SoundType.METAL))
-@@ -7546,16 +_,5 @@
+     public static final Block QUARTZ_STAIRS = registerLegacyStair("quartz_stairs", QUARTZ_BLOCK);
+     public static final Block ACTIVATOR_RAIL = register(
+-        "activator_rail", PoweredRailBlock::new, BlockBehaviour.Properties.of().noCollission().strength(0.7F).sound(SoundType.METAL)
++        "activator_rail", prop -> new PoweredRailBlock(prop, false), BlockBehaviour.Properties.of().noCollission().strength(0.7F).sound(SoundType.METAL)
+     );
+     public static final Block DROPPER = register(
+         "dropper",
+@@ -6552,14 +_,5 @@
  
-     public static void rebuildCache() {
-         Block.BLOCK_STATE_REGISTRY.forEach(BlockBehaviour.BlockStateBase::initCache);
+     private static Block register(String p_50796_, BlockBehaviour.Properties p_362760_) {
+         return register(p_50796_, Block::new, p_362760_);
 -    }
 -
 -    static {
@@ -21,8 +21,6 @@
 -                Block.BLOCK_STATE_REGISTRY.add(blockstate);
 -                blockstate.initCache();
 -            }
--
--            block.getLootTable();
 -        }
      }
  }

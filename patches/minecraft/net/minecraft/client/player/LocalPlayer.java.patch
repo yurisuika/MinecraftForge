@@ -1,14 +1,6 @@
 --- a/net/minecraft/client/player/LocalPlayer.java
 +++ b/net/minecraft/client/player/LocalPlayer.java
-@@ -161,6 +_,7 @@
- 
-     @Override
-     public boolean hurt(DamageSource p_108662_, float p_108663_) {
-+        net.minecraftforge.event.ForgeEventFactory.onLivingAttackEntity(this, p_108662_, p_108663_);
-         return false;
-     }
- 
-@@ -304,6 +_,7 @@
+@@ -303,6 +_,7 @@
          ServerboundPlayerActionPacket.Action serverboundplayeractionpacket$action = p_108701_
              ? ServerboundPlayerActionPacket.Action.DROP_ALL_ITEMS
              : ServerboundPlayerActionPacket.Action.DROP_ITEM;
@@ -16,7 +8,7 @@
          ItemStack itemstack = this.getInventory().removeFromSelected(p_108701_);
          this.connection.send(new ServerboundPlayerActionPacket(serverboundplayeractionpacket$action, BlockPos.ZERO, Direction.DOWN));
          return !itemstack.isEmpty();
-@@ -501,7 +_,11 @@
+@@ -488,7 +_,11 @@
  
      @Override
      public void playSound(SoundEvent p_108651_, float p_108652_, float p_108653_) {
@@ -29,7 +21,7 @@
      }
  
      @Override
-@@ -694,6 +_,7 @@
+@@ -682,6 +_,7 @@
              && (this.isShiftKeyDown() || !this.isSleeping() && !this.canPlayerFitWithinBlocksAndEntitiesWhen(Pose.STANDING));
          float f = (float)this.getAttributeValue(Attributes.SNEAKING_SPEED);
          this.input.tick(this.isMovingSlowly(), f);
@@ -37,7 +29,7 @@
          this.minecraft.getTutorial().onInput(this.input);
          if (this.isUsingItem() && !this.isPassenger()) {
              this.input.leftImpulse *= 0.2F;
-@@ -722,7 +_,7 @@
+@@ -710,7 +_,7 @@
          boolean flag4 = this.canStartSprinting();
          boolean flag5 = this.isPassenger() ? this.getVehicle().onGround() : this.onGround();
          boolean flag6 = !flag1 && !flag2;
@@ -46,7 +38,7 @@
              if (this.sprintTriggerTime <= 0 && !this.minecraft.options.keySprint.isDown()) {
                  this.sprintTriggerTime = 7;
              } else {
-@@ -730,15 +_,15 @@
+@@ -718,15 +_,15 @@
              }
          }
  
@@ -60,39 +52,33 @@
 -            boolean flag8 = flag7 || this.horizontalCollision && !this.minorHorizontalCollision || this.isInWater() && !this.isUnderWater();
 +            boolean flag8 = flag7 || this.horizontalCollision && !this.minorHorizontalCollision || this.isInWater() && !this.isUnderWater() || (this.isInFluidType((fluidType, height) -> this.canSwimInFluidType(fluidType)) && !this.canStartSwimming());
              if (this.isSwimming()) {
--                if (!this.onGround() && !this.input.shiftKeyDown && flag7 || !this.isInWater()) {
-+                if (!this.onGround() && !this.input.shiftKeyDown && flag7 || !(this.isInWater() || this.isInFluidType((fluidType, height) -> this.canSwimInFluidType(fluidType)))) {
+-                if (!this.onGround() && !this.input.keyPresses.shift() && flag7 || !this.isInWater()) {
++                if (!this.onGround() && !this.input.keyPresses.shift() && flag7 || !(this.isInWater() || this.isInFluidType((fluidType, height) -> this.canSwimInFluidType(fluidType)))) {
                      this.setSprinting(false);
                  }
              } else if (flag8) {
-@@ -772,14 +_,15 @@
- 
-         if (this.input.jumping && !flag9 && !flag && !abilities.flying && !this.isPassenger() && !this.onClimbable()) {
-             ItemStack itemstack = this.getItemBySlot(EquipmentSlot.CHEST);
--            if (itemstack.is(Items.ELYTRA) && ElytraItem.isFlyEnabled(itemstack) && this.tryToStartFallFlying()) {
-+            if (itemstack.canElytraFly(this) && this.tryToStartFallFlying()) {
-                 this.connection.send(new ServerboundPlayerCommandPacket(this, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
-             }
+@@ -763,8 +_,9 @@
          }
  
          this.wasFallFlying = this.isFallFlying();
--        if (this.isInWater() && this.input.shiftKeyDown && this.isAffectedByFluids()) {
+-        if (this.isInWater() && this.input.keyPresses.shift() && this.isAffectedByFluids()) {
 -            this.goDownInWater();
 +        var fluidType = this.getMaxHeightFluidType();
-+        if ((this.isInWater() || (!fluidType.isAir() && this.canSwimInFluidType(fluidType))) && this.input.shiftKeyDown && this.isAffectedByFluids()) {
++        if ((this.isInWater() || (!fluidType.isAir() && this.canSwimInFluidType(fluidType))) && this.input.keyPresses.shift() && this.isAffectedByFluids()) {
 +           this.sinkInFluid(this.isInWater() ? net.minecraftforge.common.ForgeMod.WATER_TYPE.get() : fluidType);
          }
  
          if (this.isEyeInFluid(FluidTags.WATER)) {
-@@ -885,6 +_,7 @@
+@@ -870,6 +_,8 @@
      @Override
      public void rideTick() {
          super.rideTick();
-+        if (this.wantsToStopRiding() && this.isPassenger()) this.input.shiftKeyDown = false;
++        if (this.wantsToStopRiding() && this.isPassenger())
++            this.input.keyPresses = this.input.keyPresses.jump(false);
          this.handsBusy = false;
-         if (this.getControlledVehicle() instanceof Boat boat) {
-             boat.setInput(this.input.left, this.input.right, this.input.up, this.input.down);
-@@ -1142,5 +_,17 @@
+         if (this.getControlledVehicle() instanceof AbstractBoat abstractboat) {
+             abstractboat.setInput(
+@@ -1146,6 +_,18 @@
      @Override
      public float getVisualRotationYInDegrees() {
          return this.getYRot();
@@ -100,7 +86,7 @@
 +
 +    public void updateSyncFields(LocalPlayer old) {
 +        this.xLast = old.xLast;
-+        this.yLast1 = old.yLast1;
++        this.yLast = old.yLast;
 +        this.zLast = old.zLast;
 +        this.yRotLast = old.yRotLast;
 +        this.xRotLast = old.xRotLast;
@@ -109,4 +95,5 @@
 +        this.wasSprinting = old.wasSprinting;
 +        this.positionReminder = old.positionReminder;
      }
- }
+ 
+     @Override

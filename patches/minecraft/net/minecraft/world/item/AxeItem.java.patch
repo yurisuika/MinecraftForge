@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/item/AxeItem.java
 +++ b/net/minecraft/world/item/AxeItem.java
-@@ -60,7 +_,8 @@
+@@ -62,7 +_,8 @@
          if (playerHasShieldUseIntent(p_40529_)) {
              return InteractionResult.PASS;
          } else {
@@ -10,10 +10,10 @@
              if (optional.isEmpty()) {
                  return InteractionResult.PASS;
              } else {
-@@ -113,5 +_,16 @@
+@@ -115,5 +_,16 @@
      private Optional<BlockState> getStripped(BlockState p_150691_) {
          return Optional.ofNullable(STRIPPABLES.get(p_150691_.getBlock()))
-             .map(p_150689_ -> p_150689_.defaultBlockState().setValue(RotatedPillarBlock.AXIS, p_150691_.getValue(RotatedPillarBlock.AXIS)));
+             .map(p_359378_ -> p_359378_.defaultBlockState().setValue(RotatedPillarBlock.AXIS, p_150691_.getValue(RotatedPillarBlock.AXIS)));
 +    }
 +
 +    @Override

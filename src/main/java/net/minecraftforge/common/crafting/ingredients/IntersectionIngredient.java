@@ -8,11 +8,9 @@ package net.minecraftforge.common.crafting.ingredients;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparators;
-import it.unimi.dsi.fastutil.ints.IntList;
+import net.minecraft.core.Holder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.StackedContents;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +38,7 @@ public class IntersectionIngredient extends AbstractIngredient {
 
     private final List<Ingredient> children;
     private final boolean isSimple;
-    private ItemStack[] intersectedMatchingStacks = null;
-    private IntList packedMatchingStacks = null;
+    private List<Holder<Item>> items = null;
 
     private IntersectionIngredient(List<Ingredient> children) {
         if (children.size() < 2)
@@ -62,51 +59,38 @@ public class IntersectionIngredient extends AbstractIngredient {
         return true;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    public ItemStack[] getItems() {
-        if (this.intersectedMatchingStacks == null) {
-            this.intersectedMatchingStacks = Arrays
-                .stream(children.get(0).getItems())
-                .filter(stack -> {
-                    // the first ingredient is treated as a base, filtered by the second onwards
-                    for (int i = 1; i < children.size(); i++)
-                        if (!children.get(i).test(stack))
-                            return false;
-                    return true;
-                })
-                .toArray(ItemStack[]::new);
-        }
-        return intersectedMatchingStacks;
-    }
+    public List<Holder<Item>> items() {
+        if (this.items == null) {
+            var tmp = new ArrayList<Holder<Item>>();
 
-    @Override
-    public boolean isEmpty() {
-        return children.stream().anyMatch(Ingredient::isEmpty);
+            for (var base : children.get(0).items()) {
+                boolean allMatch = true;
+                for (int i = 1; i < children.size(); i++) {
+                    boolean match = false;
+                    for (var item : children.get(i).items()) {
+                        if (base.is(item)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                if (allMatch)
+                    tmp.add(base);
+            }
+            this.items = Collections.unmodifiableList(tmp);
+        }
+        return items;
     }
 
     @Override
     public boolean isSimple() {
         return isSimple;
-    }
-
-    @Override
-    protected void invalidate() {
-        super.invalidate();
-        this.intersectedMatchingStacks = null;
-        this.packedMatchingStacks = null;
-    }
-
-    @Override
-    public IntList getStackingIds() {
-        if (this.packedMatchingStacks == null || checkInvalidation()) {
-            markValid();
-            var matchingStacks = getItems();
-            this.packedMatchingStacks = new IntArrayList(matchingStacks.length);
-            for (var stack : matchingStacks)
-                this.packedMatchingStacks.add(StackedContents.getStackingIndex(stack));
-            this.packedMatchingStacks.sort(IntComparators.NATURAL_COMPARATOR);
-        }
-        return packedMatchingStacks;
     }
 
     @Override

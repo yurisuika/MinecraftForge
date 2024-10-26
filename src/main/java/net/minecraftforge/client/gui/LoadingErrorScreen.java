@@ -21,9 +21,6 @@ import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingWarning;
 import net.minecraftforge.client.gui.widget.ExtendedButton;
 import net.minecraftforge.fml.loading.FMLPaths;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,7 +29,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class LoadingErrorScreen extends ErrorScreen {
-    private static final Logger LOGGER = LogManager.getLogger();
     private final Path modsDir;
     private final Path logFile;
     private final List<ModLoadingException> modLoadErrors;
@@ -137,7 +133,8 @@ public class LoadingErrorScreen extends ErrorScreen {
 
             @Override
             public void render(GuiGraphics guiGraphics, int entryIdx, int top, int left, final int entryWidth, final int entryHeight, final int mouseX, final int mouseY, final boolean p_194999_5_, final float partialTick) {
-                Font font = Minecraft.getInstance().font;
+                var mc = Minecraft.getInstance();
+                Font font = mc.font;
                 var strings = font.split(message, LoadingEntryList.this.width - 20);
                 int y = top + 2;
                 for (var string : strings) {

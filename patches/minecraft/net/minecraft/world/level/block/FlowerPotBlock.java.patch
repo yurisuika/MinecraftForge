@@ -51,9 +51,9 @@
 -            p_334489_.setBlock(p_330334_, Blocks.FLOWER_POT.defaultBlockState(), 3);
 +            p_334489_.setBlock(p_330334_, getEmptyPot().defaultBlockState(), 3);
              p_334489_.gameEvent(p_333787_, GameEvent.BLOCK_CHANGE, p_330334_);
-             return InteractionResult.sidedSuccess(p_334489_.isClientSide);
+             return InteractionResult.SUCCESS;
          }
-@@ -107,11 +_,30 @@
+@@ -116,11 +_,30 @@
      }
  
      public Block getPotted() {

@@ -6,13 +6,13 @@
 package net.minecraftforge.common.extensions;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.AbstractBoat;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.pathfinder.PathType;
@@ -68,7 +68,7 @@ public interface IForgeFluid {
      * @param pos the location of the fluid
      * @return {@code true} if the fluid can create a source, {@code false} otherwise
      */
-    default boolean canConvertToSource(FluidState state, Level level, BlockPos pos) {
+    default boolean canConvertToSource(FluidState state, ServerLevel level, BlockPos pos) {
         return getFluidType().canConvertToSource(state, level, pos);
     }
 
@@ -79,20 +79,20 @@ public interface IForgeFluid {
      * @param boat the boat trying to be used on the fluid
      * @return {@code true} if the boat can be used, {@code false} otherwise
      */
-    default boolean supportsBoating(FluidState state, Boat boat) {
+    default boolean supportsBoating(FluidState state, AbstractBoat boat) {
         return getFluidType().supportsBoating(state, boat);
     }
 
     /**
      * When {@code false}, the fluid will no longer update its height value while
-     * within a boat while it is not within a fluid ({@link Boat#isUnderWater()}.
+     * within a boat while it is not within a fluid ({@link AbstractBoat#isUnderWater()}.
      *
      * @param state the state of the fluid the rider is within
      * @param boat the boat the rider is within that is not inside a fluid
      * @param rider the rider of the boat
      * @return {@code true} if the fluid height should be updated, {@code false} otherwise
      */
-    default boolean shouldUpdateWhileBoating(FluidState state, Boat boat, Entity rider) {
+    default boolean shouldUpdateWhileBoating(FluidState state, AbstractBoat boat, Entity rider) {
         return getFluidType().shouldUpdateWhileBoating(state, boat, rider);
     }
 

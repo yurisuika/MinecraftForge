@@ -24,14 +24,15 @@
                  .createNarration(
                      p_342179_ -> p_343088_.isUnbound()
                              ? Component.translatable("narrator.controls.unbound", p_343976_)
-@@ -163,6 +_,7 @@
+@@ -163,7 +_,7 @@
                  )
                  .build();
-             this.resetButton = Button.builder(RESET_BUTTON_TITLE, p_343650_ -> {
+             this.resetButton = Button.builder(RESET_BUTTON_TITLE, p_357685_ -> {
+-                p_343088_.setKey(p_343088_.getDefaultKey());
 +                this.key.setToDefault();
-                 KeyBindsList.this.minecraft.options.setKey(p_343088_, p_343088_.getDefaultKey());
                  KeyBindsList.this.resetMappingAndUpdateButtons();
              }).bounds(0, 0, 50, 20).createNarration(p_344192_ -> Component.translatable("narrator.controls.reset", p_343976_)).build();
+             this.refreshEntry();
 @@ -215,7 +_,7 @@
              MutableComponent mutablecomponent = Component.empty();
              if (!this.key.isUnbound()) {

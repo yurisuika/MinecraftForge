@@ -11,11 +11,12 @@ import net.minecraft.network.chat.FormattedText;
 /**
  * Extension interface for {@link Font}.
  */
-public interface IForgeFont
-{
+public interface IForgeFont {
     FormattedText ELLIPSIS = FormattedText.of("...");
 
-    Font self();
+    default Font self() {
+        return (Font)this;
+    }
 
     /**
      * If the width of the text exceeds {@code maxWidth}, an ellipse is added and the text is substringed.
@@ -24,17 +25,16 @@ public interface IForgeFont
      * @param maxWidth the maximum width of the text
      * @return the ellipsized text
      */
-    default FormattedText ellipsize(FormattedText text, int maxWidth)
-    {
+    default FormattedText ellipsize(FormattedText text, int maxWidth) {
         final Font self = self();
         final int strWidth = self.width(text);
         final int ellipsisWidth = self.width(ELLIPSIS);
-        if (strWidth > maxWidth)
-        {
-            if (ellipsisWidth >= maxWidth) return self.substrByWidth(text, maxWidth);
+        if (strWidth > maxWidth) {
+            if (ellipsisWidth >= maxWidth)
+                return self.substrByWidth(text, maxWidth);
             return FormattedText.composite(
-                    self.substrByWidth(text, maxWidth - ellipsisWidth),
-                    ELLIPSIS
+                self.substrByWidth(text, maxWidth - ellipsisWidth),
+                ELLIPSIS
             );
         }
         return text;

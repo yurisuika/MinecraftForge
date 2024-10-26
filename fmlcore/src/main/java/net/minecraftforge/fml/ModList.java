@@ -15,12 +15,8 @@ import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.forgespi.locating.IModFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -32,8 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -45,9 +39,7 @@ import java.util.stream.Stream;
  * Master list of all mods - game-side version. This is classloaded in the game scope and
  * can dispatch game level events as a result.
  */
-public class ModList
-{
-    //private static final Logger LOGGER = LogManager.getLogger();
+public class ModList {
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
@@ -57,8 +49,7 @@ public class ModList
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
-    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList)
-    {
+    private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
         this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
         this.sortedList = sortedList.stream().
                 map(ModInfo.class::cast).
@@ -82,12 +73,12 @@ public class ModList
                 getModContainerState(mainMod.getModId()),
                 ((ModFileInfo)mf.getModFileInfo()).getCodeSigningFingerprint().orElse("NOSIGNATURE"));
     }
+
     private String crashReport() {
         return "\n"+applyForEachModFile(this::fileToLine).collect(Collectors.joining("\n\t\t", "\t\t", ""));
     }
 
-    public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList)
-    {
+    public static ModList of(List<ModFile> modFiles, List<ModInfo> sortedList) {
         INSTANCE = new ModList(modFiles, sortedList);
         return INSTANCE;
     }
@@ -96,13 +87,11 @@ public class ModList
         return INSTANCE;
     }
 
-    public List<IModFileInfo> getModFiles()
-    {
+    public List<IModFileInfo> getModFiles() {
         return modFiles;
     }
 
-    public IModFileInfo getModFileById(String modid)
-    {
+    public IModFileInfo getModFileById(String modid) {
         return this.fileById.get(modid);
     }
 
@@ -151,48 +140,39 @@ public class ModList
         return CompletableFuture.allOf(results).handle((r, th)->null).thenApply(res -> list);
     }
 
-    void setLoadedMods(final List<ModContainer> modContainers)
-    {
+    void setLoadedMods(final List<ModContainer> modContainers) {
         this.mods = modContainers;
         this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c->sortedList.indexOf(c.getModInfo()))).toList();
         this.indexedMods = modContainers.stream().collect(Collectors.toMap(ModContainer::getModId, Function.identity()));
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Optional<T> getModObjectById(String modId)
-    {
+    public <T> Optional<T> getModObjectById(String modId) {
         return getModContainerById(modId).map(ModContainer::getMod).map(o -> (T) o);
     }
 
-    public Optional<? extends ModContainer> getModContainerById(String modId)
-    {
+    public Optional<? extends ModContainer> getModContainerById(String modId) {
         return Optional.ofNullable(this.indexedMods.get(modId));
     }
 
-    public Optional<? extends ModContainer> getModContainerByObject(Object obj)
-    {
+    public Optional<? extends ModContainer> getModContainerByObject(Object obj) {
         return mods.stream().filter(mc -> mc.getMod() == obj).findFirst();
     }
 
-    public List<IModInfo> getMods()
-    {
+    public List<IModInfo> getMods() {
         return this.sortedList;
     }
 
-    public boolean isLoaded(String modTarget)
-    {
+    public boolean isLoaded(String modTarget) {
         return this.indexedMods.containsKey(modTarget);
     }
 
-    public int size()
-    {
+    public int size() {
         return mods.size();
     }
 
-    public List<ModFileScanData> getAllScanData()
-    {
-        if (modFileScanData == null)
-        {
+    public List<ModFileScanData> getAllScanData() {
+        if (modFileScanData == null) {
             modFileScanData = this.sortedList.stream().
                     map(IModInfo::getOwningFile).
                     filter(Objects::nonNull).
@@ -205,8 +185,7 @@ public class ModList
 
     }
 
-    public void forEachModFile(Consumer<IModFile> fileConsumer)
-    {
+    public void forEachModFile(Consumer<IModFile> fileConsumer) {
         modFiles.stream().map(IModFileInfo::getFile).forEach(fileConsumer);
     }
 
@@ -224,11 +203,5 @@ public class ModList
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {
         return indexedMods.values().stream().map(function);
-    }
-
-    private static class UncaughtModLoadingException extends ModLoadingException {
-        public UncaughtModLoadingException(ModLoadingStage stage, Throwable originalException) {
-            super(null, stage, "fml.modloading.uncaughterror", originalException);
-        }
     }
 }

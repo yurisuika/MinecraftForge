@@ -28,7 +28,7 @@ class NamespacedDefaultedWrapper<T> extends NamespacedWrapper<T> implements Defa
 
     // Reading Functions
     @Override
-    public T get(@Nullable ResourceLocation name) {
+    public T getValue(@Nullable ResourceLocation name) {
         return this.delegate.getValue(name); //getOrDefault
     }
 

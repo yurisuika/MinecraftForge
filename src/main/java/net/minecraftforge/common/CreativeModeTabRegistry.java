@@ -72,7 +72,7 @@ public final class CreativeModeTabRegistry {
      */
     @Nullable
     public static CreativeModeTab getTab(ResourceLocation name) {
-        return BuiltInRegistries.CREATIVE_MODE_TAB.get(name);
+        return BuiltInRegistries.CREATIVE_MODE_TAB.getValue(name);
     }
 
     /**
@@ -178,14 +178,15 @@ public final class CreativeModeTabRegistry {
     public static void sortTabs() {
         edges.clear();
 
-        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR));
-        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH));
-        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.OP_BLOCKS));
-        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.INVENTORY));
+        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.HOTBAR));
+        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.SEARCH));
+        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.OP_BLOCKS));
+        DEFAULT_TABS.add(BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.INVENTORY));
 
-        final List<Holder<CreativeModeTab>> indexed = BuiltInRegistries.CREATIVE_MODE_TAB.holders()
-                .filter(c -> !DEFAULT_TABS.contains(c.get()))
-                .collect(Collectors.toList());
+        final List<? extends Holder<CreativeModeTab>> indexed = BuiltInRegistries.CREATIVE_MODE_TAB
+            .listElements()
+            .filter(c -> !DEFAULT_TABS.contains(c.get()))
+            .toList();
         int vanillaTabs = 10;
 
         for (int i = 0; i < vanillaTabs; i++) { // Vanilla ordering

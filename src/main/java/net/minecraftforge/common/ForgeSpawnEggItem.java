@@ -7,10 +7,10 @@ package net.minecraftforge.common;
 
 import net.minecraft.core.Direction;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.block.DispenserBlock;
@@ -47,6 +47,7 @@ public class ForgeSpawnEggItem extends SpawnEggItem {
         return DEFAULT_DISPENSE_BEHAVIOR;
     }
 
+    @SuppressWarnings("deprecation")
     @Nullable
     public static SpawnEggItem fromEntityType(@Nullable EntityType<?> type) {
         SpawnEggItem ret = TYPE_MAP.get(type);
@@ -63,7 +64,7 @@ public class ForgeSpawnEggItem extends SpawnEggItem {
         EntityType<?> type = ((SpawnEggItem)stack.getItem()).getType(stack);
 
         try {
-            type.spawn(source.level(), stack, null, source.pos().relative(face), MobSpawnType.DISPENSER, face != Direction.UP, false);
+            type.spawn(source.level(), stack, null, source.pos().relative(face), EntitySpawnReason.DISPENSER, face != Direction.UP, false);
         } catch (Exception exception) {
             DispenseItemBehavior.LOGGER.error("Error while dispensing spawn egg from dispenser at {}", source.pos(), exception);
             return ItemStack.EMPTY;
@@ -95,8 +96,8 @@ public class ForgeSpawnEggItem extends SpawnEggItem {
             for (ForgeSpawnEggItem egg : MOD_EGGS) {
                 event.register((stack, layer) -> {
                     int color = egg.getColor(layer);
-                    if (FastColor.ARGB32.alpha(color) == 0)
-                        color = FastColor.ARGB32.opaque(color);
+                    if (ARGB.alpha(color) == 0)
+                        color = ARGB.opaque(color);
                     return color;
                 }, egg);
             }

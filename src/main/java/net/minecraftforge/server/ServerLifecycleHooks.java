@@ -16,7 +16,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.network.Connection;
-import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.handshake.ClientIntent;
 import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
@@ -119,25 +118,25 @@ public class ServerLifecycleHooks {
         final RegistryAccess registries = server.registryAccess();
 
         // The order of holders() is the order modifiers were loaded in.
-        final List<BiomeModifier> biomeModifiers = registries.registryOrThrow(ForgeRegistries.Keys.BIOME_MODIFIERS)
-            .holders()
+        final List<BiomeModifier> biomeModifiers = registries.lookupOrThrow(ForgeRegistries.Keys.BIOME_MODIFIERS)
+            .listElements()
             .map(Holder::value)
             .toList();
-        final List<StructureModifier> structureModifiers = registries.registryOrThrow(Keys.STRUCTURE_MODIFIERS)
-              .holders()
+        final List<StructureModifier> structureModifiers = registries.lookupOrThrow(Keys.STRUCTURE_MODIFIERS)
+              .listElements()
               .map(Holder::value)
               .toList();
 
         // Apply sorted biome modifiers to each biome.
-        registries.registryOrThrow(Registries.BIOME).holders().forEach(biomeHolder ->
+        registries.lookupOrThrow(Registries.BIOME).listElements().forEach(biomeHolder ->
             biomeHolder.value().modifiableBiomeInfo().applyBiomeModifiers(biomeHolder, biomeModifiers)
         );
         // Rebuild the indexed feature list
-        registries.registryOrThrow(Registries.LEVEL_STEM).forEach(levelStem -> {
+        registries.lookupOrThrow(Registries.LEVEL_STEM).forEach(levelStem -> {
             levelStem.generator().refreshFeaturesPerStep();
         });
         // Apply sorted structure modifiers to each structure.
-        registries.registryOrThrow(Registries.STRUCTURE).holders().forEach(structureHolder ->
+        registries.lookupOrThrow(Registries.STRUCTURE).listElements().forEach(structureHolder ->
             structureHolder.value().modifiableStructureInfo().applyStructureModifiers(structureHolder, structureModifiers)
         );
     }

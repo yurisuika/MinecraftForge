@@ -5,6 +5,7 @@
 
 package net.minecraftforge.client;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -19,7 +20,9 @@ import com.mojang.math.Constants;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.FileUtil;
+import net.minecraft.Util;
 import net.minecraft.client.Camera;
+import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.color.block.BlockColors;
@@ -44,15 +47,18 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.player.Input;
+import net.minecraft.client.player.ClientInput;
+import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.ShaderDefines;
+import net.minecraft.client.renderer.ShaderProgram;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -87,8 +93,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
-import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -118,11 +124,9 @@ import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import net.minecraftforge.client.event.RegisterShadersEvent;
 import net.minecraftforge.client.event.RenderBlockScreenEffectEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
@@ -245,10 +249,12 @@ public class ForgeHooksClient {
         MinecraftForge.EVENT_BUS.post(new ClientPauseChangeEvent.Post(pause));
     }
 
+    /*
     public static ResourceLocation getArmorTexture(Entity entity, ItemStack armor, EquipmentSlot slot, ArmorMaterial.Layer layer, boolean inner) {
         var result = armor.getItem().getArmorTexture(armor, entity, slot, layer, inner);
         return result != null ? result : layer.texture(inner);
     }
+    */
 
     public static boolean onDrawHighlight(LevelRenderer context, Camera camera, HitResult target, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource) {
         switch (target.getType()) {
@@ -261,12 +267,6 @@ public class ForgeHooksClient {
             default:
                 return false; // NO-OP - This doesn't even get called for anything other than blocks and entities
         }
-    }
-
-    public static void dispatchRenderStage(RenderType renderType, LevelRenderer levelRenderer, Matrix4f poseStack, Matrix4f projectionMatrix, int renderTick, Camera camera, Frustum frustum) {
-        RenderLevelStageEvent.Stage stage = RenderLevelStageEvent.Stage.fromRenderType(renderType);
-        if (stage != null)
-            stage.dispatch(levelRenderer, poseStack, projectionMatrix, renderTick, camera, frustum);
     }
 
     public static boolean renderSpecificFirstPersonHand(InteractionHand hand, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, float partialTick, float interpPitch, float swingProgress, float equipProgress, ItemStack stack) {
@@ -285,13 +285,13 @@ public class ForgeHooksClient {
         ModLoader.get().postEvent(new RegisterColorHandlersEvent.Item(itemColors, blockColors));
     }
 
-    public static Model getArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot slot, HumanoidModel<?> _default) {
-        return IClientItemExtensions.of(itemStack).getGenericArmorModel(entityLiving, itemStack, slot, _default);
+    public static Model getArmorModel(HumanoidRenderState state, ItemStack itemStack, EquipmentSlot slot, HumanoidModel<?> _default) {
+        return IClientItemExtensions.of(itemStack).getGenericArmorModel(state, itemStack, slot, _default);
     }
 
     /** Copies humanoid model properties from the original model to another, used for armor models */
     @SuppressWarnings("unchecked")
-    public static <T extends LivingEntity> void copyModelProperties(HumanoidModel<T> original, HumanoidModel<?> replacement) {
+    public static <T extends HumanoidRenderState> void copyModelProperties(HumanoidModel<T> original, HumanoidModel<?> replacement) {
         // this function does not make use of the <T> generic, so the unchecked cast should be safe
         original.copyPropertiesTo((HumanoidModel<T>)replacement);
         replacement.head.visible = original.head.visible;
@@ -316,10 +316,6 @@ public class ForgeHooksClient {
         } else {
             return base + name;
         }
-    }
-
-    public static float getFieldOfViewModifier(Player entity, float fovModifier) {
-        return MinecraftForge.EVENT_BUS.fire(new ComputeFovModifierEvent(entity, fovModifier)).getNewFovModifier();
     }
 
     /**
@@ -400,18 +396,22 @@ public class ForgeHooksClient {
         return fluidFogColor;
     }
 
-    public static void onFogRender(FogRenderer.FogMode mode, FogType type, Camera camera, float partialTick, float renderDistance, float nearDistance, float farDistance, FogShape shape) {
+    public static FogParameters getFogParameters(FogRenderer.FogMode mode, FogType type, Camera camera, float partialTick, float renderDistance, FogParameters original) {
+        var ret = original;
         // Modify fog rendering depending on the fluid
         FluidState state = camera.getEntity().level().getFluidState(camera.getBlockPosition());
         if (camera.getPosition().y < (double)((float)camera.getBlockPosition().getY() + state.getHeight(camera.getEntity().level(), camera.getBlockPosition())))
-            IClientFluidTypeExtensions.of(state).modifyFogRender(camera, mode, renderDistance, partialTick, nearDistance, farDistance, shape);
+            ret = IClientFluidTypeExtensions.of(state).modifyFogRender(camera, mode, renderDistance, partialTick, ret);
 
-        ViewportEvent.RenderFog event = new ViewportEvent.RenderFog(mode, type, camera, partialTick, nearDistance, farDistance, shape);
+        var event = new ViewportEvent.RenderFog(mode, type, camera, partialTick, ret.start(), ret.end(), ret.shape());
         if (MinecraftForge.EVENT_BUS.post(event)) {
-            RenderSystem.setShaderFogStart(event.getNearPlaneDistance());
-            RenderSystem.setShaderFogEnd(event.getFarPlaneDistance());
-            RenderSystem.setShaderFogShape(event.getFogShape());
+            return new FogParameters(
+                event.getNearPlaneDistance(), event.getFarPlaneDistance(), event.getFogShape(),
+                ret.red(), ret.green(), ret.blue(), ret.alpha()
+            );
         }
+
+        return ret;
     }
 
     public static void onModifyBakingResult(Map<ModelResourceLocation, BakedModel> models, ModelBakery modelBakery) {
@@ -422,29 +422,28 @@ public class ForgeHooksClient {
         ModLoader.get().postEvent(new ModelEvent.BakingCompleted(modelManager, Collections.unmodifiableMap(models), modelBakery));
     }
 
-    @SuppressWarnings("deprecation")
     public static TextureAtlasSprite[] getFluidSprites(BlockAndTintGetter level, BlockPos pos, FluidState fluidStateIn) {
         IClientFluidTypeExtensions props = IClientFluidTypeExtensions.of(fluidStateIn);
         ResourceLocation overlayTexture = props.getOverlayTexture(fluidStateIn, level, pos);
         return new TextureAtlasSprite[] {
-                Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(props.getStillTexture(fluidStateIn, level, pos)),
-                Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(props.getFlowingTexture(fluidStateIn, level, pos)),
-                overlayTexture == null ? null : Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(overlayTexture),
+                Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(props.getStillTexture(fluidStateIn, level, pos)),
+                Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(props.getFlowingTexture(fluidStateIn, level, pos)),
+                overlayTexture == null ? null : Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(overlayTexture),
         };
     }
 
-    @SuppressWarnings("deprecation")
     public static Material getBlockMaterial(ResourceLocation loc) {
-        return new Material(TextureAtlas.LOCATION_BLOCKS, loc);
+        return new Material(InventoryMenu.BLOCK_ATLAS, loc);
     }
 
+    /*
     public static void fillNormal(int[] faceData, Direction facing) {
         fillNormal(faceData, facing, false);
     }
 
     /**
      * internal, relies on fixed format of FaceBakery
-     */
+     * /
     // TODO Do we need this?
     public static void fillNormal(int[] faceData, Direction facing, boolean calculateNormals) {
         Vector3f v2;
@@ -468,6 +467,7 @@ public class ForgeHooksClient {
         for(int i = 0; i < 4; i++)
             faceData[i * 8 + 7] = normal;
     }
+    */
 
     private static Vector3f getVertexPos(int[] data, int vertex) {
         int idx = vertex * 8;
@@ -490,14 +490,6 @@ public class ForgeHooksClient {
         return true;
     }
 
-    public static void loadEntityShader(Entity entity, GameRenderer entityRenderer) {
-        if (entity != null) {
-            ResourceLocation shader = EntitySpectatorShaderManager.get(entity.getType());
-            if (shader != null)
-                entityRenderer.loadEffect(shader);
-        }
-    }
-
     private static int slotMainHand = 0;
 
     public static boolean shouldCauseReequipAnimation(@NotNull ItemStack from, @NotNull ItemStack to, int slot) {
@@ -517,22 +509,20 @@ public class ForgeHooksClient {
 
     public static CustomizeGuiOverlayEvent.BossEventProgress onCustomizeBossEventProgress(GuiGraphics guiGraphics, Window window, LerpingBossEvent bossInfo, int x, int y, int increment) {
         var evt = new CustomizeGuiOverlayEvent.BossEventProgress(window, guiGraphics,
-                Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false), bossInfo, x, y, increment);
+                Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false), bossInfo, x, y, increment);
         MinecraftForge.EVENT_BUS.post(evt);
         return evt;
     }
 
     public static void onCustomizeChatEvent(GuiGraphics guiGraphics, ChatComponent chat, Window window, int mouseX, int mouseY, int tickCount) {
         var minecraft = Minecraft.getInstance();
-        minecraft.getProfiler().push("chat");
-        var evt = new CustomizeGuiOverlayEvent.Chat(window, guiGraphics, minecraft.getTimer().getRealtimeDeltaTicks(), 0, chat.getHeight() - 40);
+        var evt = new CustomizeGuiOverlayEvent.Chat(window, guiGraphics, minecraft.getDeltaTracker().getRealtimeDeltaTicks(), 0, chat.getHeight() - 40);
         MinecraftForge.EVENT_BUS.post(evt);
         guiGraphics.pose().pushPose();
         // We give the absolute Y position of the chat component in the event and account for the chat component's own offsetting here.
         guiGraphics.pose().translate(evt.getPosX(), (evt.getPosY() - chat.getHeight() + 40) / chat.getScale(), 0.0D);
         chat.render(guiGraphics, tickCount, mouseX, mouseY, false);
         guiGraphics.pose().popPose();
-        minecraft.getProfiler().pop();
     }
 
     public static void onCustomizeDebugEvent(GuiGraphics guiGraphics, Window window, float partialTick, List<String> text, boolean isLeft) {
@@ -547,18 +537,18 @@ public class ForgeHooksClient {
         }
     }
 
-    public static void onMovementInputUpdate(Player player, Input movementInput) {
+    public static void onMovementInputUpdate(Player player, ClientInput movementInput) {
         MinecraftForge.EVENT_BUS.post(new MovementInputUpdateEvent(player, movementInput));
     }
 
-    public static void onScreenKeyPressed(boolean[] state, Screen screen, int keyCode, int scanCode, int modifiers) {
-        state[0] = ForgeEventFactoryClient.onScreenKeyPressedPre(screen, keyCode, scanCode, modifiers)
+    public static boolean onScreenKeyPressed(Screen screen, int keyCode, int scanCode, int modifiers) {
+        return ForgeEventFactoryClient.onScreenKeyPressedPre(screen, keyCode, scanCode, modifiers)
             || screen.keyPressed(keyCode, scanCode, modifiers)
             || ForgeEventFactoryClient.onScreenKeyPressedPost(screen, keyCode, scanCode, modifiers);
     }
 
-    public static void onScreenKeyReleased(boolean[] state, Screen screen, int keyCode, int scanCode, int modifiers) {
-        state[0] = ForgeEventFactoryClient.onScreenKeyReleasedPre(screen, keyCode, scanCode, modifiers)
+    public static boolean onScreenKeyReleased(Screen screen, int keyCode, int scanCode, int modifiers) {
+        return ForgeEventFactoryClient.onScreenKeyReleasedPre(screen, keyCode, scanCode, modifiers)
             || screen.keyReleased(keyCode, scanCode, modifiers)
             || ForgeEventFactoryClient.onScreenKeyReleasedPost(screen, keyCode, scanCode, modifiers);
     }
@@ -567,10 +557,6 @@ public class ForgeHooksClient {
         return ForgeEventFactoryClient.onScreenCharTypedPre(screen, codePoint, modifiers)
             || screen.charTyped(codePoint, modifiers)
             || ForgeEventFactoryClient.onScreenCharTypedPost(screen, codePoint, modifiers);
-    }
-
-    public static void onRecipesUpdated(RecipeManager mgr) {
-        MinecraftForge.EVENT_BUS.post(new RecipesUpdatedEvent(mgr));
     }
 
     public static void onKeyInput(int key, int scanCode, int action, int modifiers) {
@@ -713,7 +699,7 @@ public class ForgeHooksClient {
                 tooltip = ForgeI18n.parseMessage("fml.menu.multiplayer.unknown", target.forgeData.type());
         }
 
-        guiGraphics.blit(ICON_SHEET, x + width - 18, y + 10, 16, 16, 0, idx, 16, 16, 256, 256);
+        guiGraphics.blit(RenderType::guiTextured, ICON_SHEET, x + width - 18, y + 10, 16, 16, 0, idx, 16, 16, 256, 256);
 
         if(relativeMouseX > width - 15 && relativeMouseX < width && relativeMouseY > 10 && relativeMouseY < 26) {
             //this is not the most proper way to do it,
@@ -742,10 +728,6 @@ public class ForgeHooksClient {
         ModLoader.get().postEvent(new RegisterKeyMappingsEvent(options));
     }
 
-    public static void onRegisterAdditionalModels(Set<ModelResourceLocation> additionalModels) {
-        ModLoader.get().postEvent(new ModelEvent.RegisterAdditional(additionalModels));
-    }
-
     @Nullable
     public static Component onClientChat(ChatType.Bound boundChatType, Component message, UUID sender) {
         ClientChatReceivedEvent event = new ClientChatReceivedEvent(boundChatType, message, sender);
@@ -771,31 +753,9 @@ public class ForgeHooksClient {
         return MinecraftForge.EVENT_BUS.post(event) ? "" : event.getMessage();
     }
 
-    /**
-     * Mimics the behavior of {@link net.minecraft.client.renderer.ItemBlockRenderTypes#getRenderType(BlockState, boolean)}
-     * for the input {@link RenderType}.
-     */
-    @NotNull
-    public static RenderType getEntityRenderType(RenderType chunkRenderType, boolean cull) {
-        return RenderTypeHelper.getEntityRenderType(chunkRenderType, cull);
-    }
-
-    @Mod.EventBusSubscriber(value = Dist.CLIENT, modid="forge", bus= Mod.EventBusSubscriber.Bus.MOD)
-    public static class ClientEvents {
-        @Nullable
-        private static ShaderInstance rendertypeEntityTranslucentUnlitShader;
-
-        public static ShaderInstance getEntityTranslucentUnlitShader() {
-            return Objects.requireNonNull(rendertypeEntityTranslucentUnlitShader, "Attempted to call getEntityTranslucentUnlitShader before shaders have finished loading.");
-        }
-
-        @SubscribeEvent
-        public static void registerShaders(RegisterShadersEvent event) throws IOException {
-            event.registerShader(new ShaderInstance(event.getResourceProvider(), ResourceLocation.fromNamespaceAndPath("forge", "rendertype_entity_unlit_translucent"), DefaultVertexFormat.NEW_ENTITY), (p_172645_) -> {
-                rendertypeEntityTranslucentUnlitShader = p_172645_;
-            });
-        }
-    }
+    public static final Supplier<ShaderProgram> SHADER_UNLIT_TRANSLUCENT = Suppliers.memoize(() ->
+        new ShaderProgram(ResourceLocation.fromNamespaceAndPath("forge", "rendertype_entity_unlit_translucent"), DefaultVertexFormat.NEW_ENTITY, ShaderDefines.EMPTY)
+    );
 
     public static Font getTooltipFont(@NotNull ItemStack stack, Font fallbackFont) {
         Font stackFont = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
@@ -806,12 +766,6 @@ public class ForgeHooksClient {
         var preEvent = new RenderTooltipEvent.Pre(stack, graphics, x, y, screenWidth, screenHeight, getTooltipFont(stack, fallbackFont), components, positioner);
         MinecraftForge.EVENT_BUS.post(preEvent);
         return preEvent;
-    }
-
-    public static RenderTooltipEvent.Color onRenderTooltipColor(@NotNull ItemStack stack, GuiGraphics graphics, int x, int y, @NotNull Font font, @NotNull List<ClientTooltipComponent> components) {
-        var colorEvent = new RenderTooltipEvent.Color(stack, graphics, x, y, font, 0xf0100010, 0x505000FF, 0x5028007f, components);
-        MinecraftForge.EVENT_BUS.post(colorEvent);
-        return colorEvent;
     }
 
     public static List<ClientTooltipComponent> gatherTooltipComponents(ItemStack stack, List<? extends FormattedText> textElements, int mouseX, int screenWidth, int screenHeight, Font fallbackFont) {
@@ -894,14 +848,6 @@ public class ForgeHooksClient {
         };
     }
 
-    public static ScreenEvent.RenderInventoryMobEffects onScreenPotionSize(Screen screen, int availableSpace, boolean compact, int horizontalOffset) {
-        return MinecraftForge.EVENT_BUS.fire(new ScreenEvent.RenderInventoryMobEffects(screen, availableSpace, compact, horizontalOffset));
-    }
-
-    public static boolean onToastAdd(Toast toast) {
-        return MinecraftForge.EVENT_BUS.post(new ToastAddEvent(toast));
-    }
-
     public static boolean isBlockInSolidLayer(BlockState state) {
         var model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
         return model.getRenderTypes(state, RandomSource.create(), ModelData.EMPTY).contains(RenderType.solid());
@@ -949,37 +895,6 @@ public class ForgeHooksClient {
         return loc.withPath(normalised);
     }
 
-    /**
-     * This function is a clone of {@link Direction#getNearest(float, float, float)} designed to return a consistent
-     * direction when the normal is at an inflection point (ie 45 degrees) rounding errors
-     * from associated matrix multiplication (such as during {@link SheetedDecalTextureGenerator#endVertex()}
-     * can cause the direction chosen to be unstable.
-     *
-     * The function will only take effect if the Forge Client config option "stabilizeDirectionGetNearest" is enabled.
-     *
-     * This is a port of the downstream changes from https://github.com/neoforged/NeoForge PR #26
-     *
-     * @param nX X component of the normal
-     * @param nY Y component of the normal
-     * @param nZ Z component of the normal
-     * @return the nearest Direction to the passed in normal, biased slightly in favor of the order of declaration
-     */
-   public static Direction getNearestStable(float nX, float nY, float nZ) {
-       if (ForgeConfig.CLIENT.stabilizeDirectionGetNearest.get()) {
-           Direction ret = Direction.NORTH;
-           float sum = Float.MIN_VALUE;
-           for(Direction dir : Direction.values()) {
-               float newSum = nX * (float)dir.getNormal().getX() + nY * (float)dir.getNormal().getY() + nZ * (float)dir.getNormal().getZ();
-               if (newSum > sum + Constants.EPSILON) {
-                   sum = newSum;
-                   ret = dir;
-               }
-           }
-           return ret;
-       } else
-           return Direction.getNearest(nX, nY, nZ);
-    }
-
     // Make sure the below method is only ever called once (by forge).
     private static boolean initializedClientHooks = false;
     // Runs during Minecraft construction, before initial resource loading.
@@ -997,7 +912,6 @@ public class ForgeHooksClient {
         ClientTooltipComponentManager.init();
         EntitySpectatorShaderManager.init();
         ForgeHooksClient.onRegisterKeyMappings(mc.options);
-        RecipeBookManager.init();
         //GuiOverlayManager.init();
         DimensionSpecialEffectsManager.init();
         NamedRenderTypeManager.init();
@@ -1014,11 +928,9 @@ public class ForgeHooksClient {
         return true;
     }
 
-    public static void onScreenMouseDrag(Screen screen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        if (ForgeEventFactoryClient.onScreenMouseDragPre(screen, mouseX, mouseY, mouseButton, dragX, dragY))
-            return;
-        if (screen.mouseDragged(mouseX, mouseY, mouseButton, dragX, dragY))
-            return;
-        ForgeEventFactoryClient.onScreenMouseDragPost(screen, mouseX, mouseY, mouseButton, dragX, dragY);
+    public static boolean onScreenMouseDrag(Screen screen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
+        return ForgeEventFactoryClient.onScreenMouseDragPre(screen, mouseX, mouseY, mouseButton, dragX, dragY)
+            || screen.mouseDragged(mouseX, mouseY, mouseButton, dragX, dragY)
+            || ForgeEventFactoryClient.onScreenMouseDragPost(screen, mouseX, mouseY, mouseButton, dragX, dragY);
     }
 }

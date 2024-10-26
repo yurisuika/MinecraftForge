@@ -4,8 +4,8 @@
  import net.minecraft.world.item.crafting.Recipe;
  
  public interface RecipeOutput {
--    void accept(ResourceLocation p_310578_, Recipe<?> p_312265_, @Nullable AdvancementHolder p_310407_);
-+    default void accept(ResourceLocation id, Recipe<?> recipe, @Nullable AdvancementHolder advancement) {
+-    void accept(ResourceKey<Recipe<?>> p_367162_, Recipe<?> p_360758_, @Nullable AdvancementHolder p_361155_);
++    default void accept(ResourceKey<Recipe<?>> id, Recipe<?> recipe, @Nullable AdvancementHolder advancement) {
 +        if (advancement == null) {
 +            accept(id, recipe, null, null);
 +        } else {
@@ -15,9 +15,9 @@
 +        }
 +    }
 +
-+    void accept(ResourceLocation id, Recipe<?> recipe, @Nullable ResourceLocation advancementId, @Nullable com.google.gson.JsonElement advancement);
++    void accept(ResourceKey<Recipe<?>> id, Recipe<?> recipe, @Nullable net.minecraft.resources.ResourceLocation advancementId, @Nullable com.google.gson.JsonElement advancement);
 +
 +    net.minecraft.core.HolderLookup.Provider registry();
  
      Advancement.Builder advancement();
- }
+ 

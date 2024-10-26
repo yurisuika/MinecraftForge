@@ -1,21 +1,26 @@
 --- a/net/minecraft/world/item/Item.java
 +++ b/net/minecraft/world/item/Item.java
-@@ -56,9 +_,12 @@
+@@ -70,7 +_,7 @@
  import net.minecraft.world.phys.Vec3;
  import org.slf4j.Logger;
  
 -public class Item implements FeatureElement, ItemLike {
 +public class Item implements FeatureElement, ItemLike, net.minecraftforge.common.extensions.IForgeItem {
+     public static final Codec<Holder<Item>> CODEC = BuiltInRegistries.ITEM
+         .holderByNameCodec()
+         .validate(
+@@ -79,7 +_,9 @@
+                     : DataResult.success(p_361655_)
+         );
      private static final Logger LOGGER = LogUtils.getLogger();
 -    public static final Map<Block, Item> BY_BLOCK = Maps.newHashMap();
-+
 +    public static final net.minecraft.network.codec.StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf, Holder<Item>> STREAM_CODEC =
 +        net.minecraft.network.codec.ByteBufCodecs.holderRegistry(net.minecraft.core.registries.Registries.ITEM);
 +    public static final Map<Block, Item> BY_BLOCK = net.minecraftforge.registries.GameData.ItemCallbacks.getBlockItemMap();
      public static final ResourceLocation BASE_ATTACK_DAMAGE_ID = ResourceLocation.withDefaultNamespace("base_attack_damage");
      public static final ResourceLocation BASE_ATTACK_SPEED_ID = ResourceLocation.withDefaultNamespace("base_attack_speed");
      public static final int DEFAULT_MAX_STACK_SIZE = 64;
-@@ -95,6 +_,7 @@
+@@ -116,6 +_,7 @@
                  LOGGER.error("Item classes should end with Item and {} doesn't.", s);
              }
          }
@@ -23,7 +28,7 @@
      }
  
      @Deprecated
-@@ -102,17 +_,25 @@
+@@ -123,17 +_,25 @@
          return this.builtInRegistryHolder;
      }
  
@@ -51,36 +56,16 @@
      public void onDestroyed(ItemEntity p_150887_) {
      }
  
-@@ -238,10 +_,12 @@
+@@ -239,6 +_,8 @@
+         return BuiltInRegistries.ITEM.wrapAsHolder(this).getRegisteredName();
      }
  
-     @Nullable
-+    @Deprecated // Use ItemStack sensitive version.
-     public final Item getCraftingRemainingItem() {
-         return this.craftingRemainingItem;
++    /** Forge: use {@link ItemStack#getCraftingRemainder()}. */
++    @Deprecated
+     public final ItemStack getCraftingRemainder() {
+         return this.craftingRemainingItem == null ? ItemStack.EMPTY : new ItemStack(this.craftingRemainingItem);
      }
- 
-+    @Deprecated // Use ItemStack sensitive version.
-     public boolean hasCraftingRemainingItem() {
-         return this.craftingRemainingItem != null;
-     }
-@@ -297,6 +_,7 @@
-         return p_41436_.clip(new ClipContext(vec3, vec31, ClipContext.Block.OUTLINE, p_41438_, p_41437_));
-     }
- 
-+    /** @deprecated in favor of {@link net.minecraftforge.common.extensions.IForgeItem#getEnchantmentValue(ItemStack)}  */
-     public int getEnchantmentValue() {
-         return 0;
-     }
-@@ -305,6 +_,7 @@
-         return false;
-     }
- 
-+    /** @deprecated in favor of {@link net.minecraftforge.common.extensions.IForgeItem#getDefaultAttributeModifiers(ItemStack)}  */
-     @Deprecated
-     public ItemAttributeModifiers getDefaultAttributeModifiers() {
-         return ItemAttributeModifiers.EMPTY;
-@@ -339,6 +_,30 @@
+@@ -318,6 +_,30 @@
          return this.requiredFeatures;
      }
  
@@ -109,9 +94,9 @@
 +    public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientItemExtensions> consumer) { }
 +
      public static class Properties {
-         private static final Interner<DataComponentMap> COMPONENT_INTERNER = Interners.newStrongInterner();
-         @Nullable
-@@ -439,6 +_,11 @@
+         private static final DependantName<Item, String> BLOCK_DESCRIPTION_ID = p_367498_ -> Util.makeDescriptionId("block", p_367498_.location());
+         private static final DependantName<Item, String> ITEM_DESCRIPTION_ID = p_367603_ -> Util.makeDescriptionId("item", p_367603_.location());
+@@ -483,6 +_,11 @@
          @Nullable
          MapItemSavedData mapData(MapId p_335695_);
  
@@ -123,7 +108,7 @@
          static Item.TooltipContext of(@Nullable final Level p_332083_) {
              return p_332083_ == null ? EMPTY : new Item.TooltipContext() {
                  @Override
-@@ -454,6 +_,11 @@
+@@ -498,6 +_,11 @@
                  @Override
                  public MapItemSavedData mapData(MapId p_330171_) {
                      return p_332083_.getMapData(p_330171_);

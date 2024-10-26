@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -199,11 +_,12 @@
+@@ -202,11 +_,12 @@
      private final List<CustomSpawner> customSpawners;
      @Nullable
      private EndDragonFight dragonFight;
@@ -14,7 +14,7 @@
  
      public ServerLevel(
          MinecraftServer p_214999_,
-@@ -286,6 +_,12 @@
+@@ -289,6 +_,12 @@
          this.sleepStatus = new SleepStatus();
          this.gameEventDispatcher = new GameEventDispatcher(this);
          this.randomSequences = Objects.requireNonNullElseGet(p_288977_, () -> this.getDataStorage().computeIfAbsent(RandomSequences.factory(i), "random_sequences"));
@@ -27,7 +27,7 @@
      }
  
      @Deprecated
-@@ -326,8 +_,8 @@
+@@ -330,8 +_,8 @@
          int i = this.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
          if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
              if (this.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
@@ -38,7 +38,7 @@
              }
  
              this.wakeUpAllPlayers();
-@@ -365,7 +_,8 @@
+@@ -369,7 +_,8 @@
  
          this.handlingTick = false;
          profilerfiller.pop();
@@ -48,15 +48,15 @@
          if (flag1) {
              this.resetEmptyTime();
          }
-@@ -396,6 +_,7 @@
-                                 p_308944_.stopRiding();
+@@ -398,6 +_,7 @@
+                                 p_358707_.stopRiding();
                              }
  
-+                            if (p_308944_.isRemoved() || p_308944_ instanceof net.minecraftforge.entity.PartEntity) return;
++                            if (p_358707_.isRemoved() || p_358707_ instanceof net.minecraftforge.entity.PartEntity) return;
                              profilerfiller.push("tick");
-                             this.guardEntityTick(this::tickNonPassenger, p_308944_);
+                             this.guardEntityTick(this::tickNonPassenger, p_358707_);
                              profilerfiller.pop();
-@@ -527,6 +_,7 @@
+@@ -525,6 +_,7 @@
          BlockPos blockpos = this.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, p_300602_);
          BlockPos blockpos1 = blockpos.below();
          Biome biome = this.getBiome(blockpos).value();
@@ -64,7 +64,7 @@
          if (biome.shouldFreeze(this, blockpos1)) {
              this.setBlockAndUpdate(blockpos1, Blocks.ICE.defaultBlockState());
          }
-@@ -702,8 +_,8 @@
+@@ -700,8 +_,8 @@
                  this.server.getPlayerList().broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.START_RAINING, 0.0F));
              }
  
@@ -75,23 +75,23 @@
          }
      }
  
-@@ -739,6 +_,7 @@
+@@ -738,6 +_,7 @@
          p_8648_.tickCount++;
-         this.getProfiler().push(() -> BuiltInRegistries.ENTITY_TYPE.getKey(p_8648_.getType()).toString());
+         profilerfiller.push(() -> BuiltInRegistries.ENTITY_TYPE.getKey(p_8648_.getType()).toString());
          profilerfiller.incrementCounter("tickNonPassenger");
 +        if (p_8648_.canUpdate())
          p_8648_.tick();
-         this.getProfiler().pop();
+         profilerfiller.pop();
  
-@@ -756,6 +_,7 @@
-             ProfilerFiller profilerfiller = this.getProfiler();
+@@ -755,6 +_,7 @@
+             ProfilerFiller profilerfiller = Profiler.get();
              profilerfiller.push(() -> BuiltInRegistries.ENTITY_TYPE.getKey(p_8664_.getType()).toString());
              profilerfiller.incrementCounter("tickPassenger");
 +            if (p_8664_.canUpdate())
              p_8664_.rideTick();
              profilerfiller.pop();
  
-@@ -788,6 +_,7 @@
+@@ -787,6 +_,7 @@
              } else {
                  this.entityManager.autoSave();
              }
@@ -99,7 +99,7 @@
          }
      }
  
-@@ -877,6 +_,7 @@
+@@ -881,6 +_,7 @@
      }
  
      private void addPlayer(ServerPlayer p_8854_) {
@@ -107,7 +107,7 @@
          Entity entity = this.getEntities().get(p_8854_.getUUID());
          if (entity != null) {
              LOGGER.warn("Force-added player with duplicate UUID {}", p_8854_.getUUID());
-@@ -884,7 +_,8 @@
+@@ -888,7 +_,8 @@
              this.removePlayerImmediately((ServerPlayer)entity, Entity.RemovalReason.DISCARDED);
          }
  
@@ -117,7 +117,7 @@
      }
  
      private boolean addEntity(Entity p_8873_) {
-@@ -892,7 +_,12 @@
+@@ -896,7 +_,12 @@
              LOGGER.warn("Tried to add entity {} but it was marked as removed already", EntityType.getKey(p_8873_.getType()));
              return false;
          } else {
@@ -131,7 +131,7 @@
          }
      }
  
-@@ -940,6 +_,12 @@
+@@ -944,6 +_,12 @@
          float p_263390_,
          long p_263403_
      ) {
@@ -144,7 +144,7 @@
          this.server
              .getPlayerList()
              .broadcast(
-@@ -957,6 +_,12 @@
+@@ -961,6 +_,12 @@
      public void playSeededSound(
          @Nullable Player p_263545_, Entity p_263544_, Holder<SoundEvent> p_263491_, SoundSource p_263542_, float p_263530_, float p_263520_, long p_263490_
      ) {
@@ -157,7 +157,7 @@
          this.server
              .getPlayerList()
              .broadcast(
-@@ -1000,6 +_,7 @@
+@@ -1019,6 +_,7 @@
  
      @Override
      public void gameEvent(Holder<GameEvent> p_334475_, Vec3 p_215042_, GameEvent.Context p_215043_) {
@@ -165,26 +165,49 @@
          this.gameEventDispatcher.post(p_334475_, p_215042_, p_215043_);
      }
  
-@@ -1038,11 +_,17 @@
+@@ -1057,16 +_,24 @@
  
      @Override
      public void updateNeighborsAt(BlockPos p_215045_, Block p_215046_) {
-+        if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(this, p_215045_, this.getBlockState(p_215045_), java.util.EnumSet.allOf(Direction.class), false).isCanceled()) return;
-         this.neighborUpdater.updateNeighborsAtExceptFromFacing(p_215045_, p_215046_, null);
++        if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(this, p_215045_, this.getBlockState(p_215045_), java.util.EnumSet.allOf(Direction.class), false))
++            return;
+         this.updateNeighborsAt(p_215045_, p_215046_, ExperimentalRedstoneUtils.initialOrientation(this, null, null));
      }
  
      @Override
-     public void updateNeighborsAtExceptFromFacing(BlockPos p_215052_, Block p_215053_, Direction p_215054_) {
-+        java.util.EnumSet<Direction> directions = java.util.EnumSet.allOf(Direction.class);
-+        directions.remove(p_215054_);
-+        if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(this, p_215052_, this.getBlockState(p_215052_), directions, false).isCanceled()) {
-+           return;
-+        }
-         this.neighborUpdater.updateNeighborsAtExceptFromFacing(p_215052_, p_215053_, p_215054_);
+     public void updateNeighborsAt(BlockPos p_362530_, Block p_362552_, @Nullable Orientation p_367766_) {
++        if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(this, p_362530_, this.getBlockState(p_362530_), java.util.EnumSet.allOf(Direction.class), false))
++            return;
+         this.neighborUpdater.updateNeighborsAtExceptFromFacing(p_362530_, p_362552_, null, p_367766_);
      }
  
-@@ -1660,6 +_,11 @@
-         return crashreportcategory;
+     @Override
+     public void updateNeighborsAtExceptFromFacing(BlockPos p_215052_, Block p_215053_, Direction p_215054_, @Nullable Orientation p_370072_) {
++        var directions = java.util.EnumSet.allOf(Direction.class);
++        directions.remove(p_215054_);
++        if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(this, p_215052_, this.getBlockState(p_215052_), directions, false))
++           return;
+         this.neighborUpdater.updateNeighborsAtExceptFromFacing(p_215052_, p_215053_, p_215054_, p_370072_);
+     }
+ 
+@@ -1112,12 +_,14 @@
+         Explosion.BlockInteraction explosion$blockinteraction = switch (p_255827_) {
+             case NONE -> Explosion.BlockInteraction.KEEP;
+             case BLOCK -> this.getDestroyType(GameRules.RULE_BLOCK_EXPLOSION_DROP_DECAY);
+-            case MOB -> this.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? this.getDestroyType(GameRules.RULE_MOB_EXPLOSION_DROP_DECAY) : Explosion.BlockInteraction.KEEP;
++            case MOB -> net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this, p_256039_) ? this.getDestroyType(GameRules.RULE_MOB_EXPLOSION_DROP_DECAY) : Explosion.BlockInteraction.KEEP;
+             case TNT -> this.getDestroyType(GameRules.RULE_TNT_EXPLOSION_DROP_DECAY);
+             case TRIGGER -> Explosion.BlockInteraction.TRIGGER_BLOCK;
+         };
+         Vec3 vec3 = new Vec3(p_256067_, p_256370_, p_256153_);
+         ServerExplosion serverexplosion = new ServerExplosion(this, p_256039_, p_255778_, p_256002_, vec3, p_256045_, p_255686_, explosion$blockinteraction);
++        if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(this, serverexplosion))
++            return;
+         serverexplosion.explode();
+         ParticleOptions particleoptions = serverexplosion.isSmall() ? p_310962_ : p_310322_;
+ 
+@@ -1691,6 +_,11 @@
+         return this.chunkSource.getGenerator().getSeaLevel();
      }
  
 +    @Override
@@ -195,7 +218,7 @@
      final class EntityCallbacks implements LevelCallback<Entity> {
          public void onCreated(Entity p_143355_) {
          }
-@@ -1694,8 +_,8 @@
+@@ -1725,8 +_,8 @@
                  ServerLevel.this.navigatingMobs.add(mob);
              }
  
@@ -206,7 +229,7 @@
                      ServerLevel.this.dragonParts.put(enderdragonpart.getId(), enderdragonpart);
                  }
              }
-@@ -1721,13 +_,16 @@
+@@ -1752,13 +_,16 @@
                  ServerLevel.this.navigatingMobs.remove(mob);
              }
  

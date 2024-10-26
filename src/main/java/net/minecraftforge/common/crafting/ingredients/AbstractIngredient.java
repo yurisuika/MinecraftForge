@@ -5,12 +5,12 @@
 
 package net.minecraftforge.common.crafting.ingredients;
 
+import net.minecraft.core.HolderSet;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
-import java.util.stream.Stream;
 
 /**
  * Extension of {@link Ingredient} which makes most methods custom ingredients need to implement abstract, and removes the static constructors
@@ -19,12 +19,11 @@ import java.util.stream.Stream;
 public abstract class AbstractIngredient extends Ingredient {
     /** Empty constructor, for the sake of dynamic ingredients */
     protected AbstractIngredient() {
-        super(Stream.of());
+        super(HolderSet.empty(), false);
     }
 
-    /** Value constructor, for ingredients that have some vanilla representation */
-    protected AbstractIngredient(Stream<? extends Value> values) {
-        super(values);
+    protected AbstractIngredient(HolderSet<Item> items) {
+        super(items);
     }
 
     @Override
@@ -35,12 +34,6 @@ public abstract class AbstractIngredient extends Ingredient {
 
 
     /* Hide vanilla ingredient static constructors to reduce errors with constructing custom ingredients */
-
-    /** @deprecated use {@link Ingredient#fromValues(Stream)} */
-    @Deprecated
-    public static Ingredient fromValues(Stream<? extends Ingredient.Value> values) {
-        throw new UnsupportedOperationException("Use Ingredient.fromValues()");
-    }
 
     /** @deprecated use {@link Ingredient#of()} */
     @Deprecated
@@ -57,12 +50,6 @@ public abstract class AbstractIngredient extends Ingredient {
     /** @deprecated use {@link Ingredient#of(ItemStack...)} (Stream)} */
     @Deprecated
     public static Ingredient of(ItemStack... stacks) {
-        throw new UnsupportedOperationException("Use Ingredient.of()");
-    }
-
-    /** @deprecated use {@link Ingredient#of(Stream)} (Stream)} */
-    @Deprecated
-    public static Ingredient of(Stream<ItemStack> stacks) {
         throw new UnsupportedOperationException("Use Ingredient.of()");
     }
 

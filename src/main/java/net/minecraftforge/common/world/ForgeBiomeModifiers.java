@@ -56,7 +56,7 @@ public final class ForgeBiomeModifiers {
         @Override
         public void modify(Holder<Biome> biome, Phase phase, Builder builder) {
             if (phase == Phase.ADD && this.biomes.contains(biome)) {
-                BiomeGenerationSettingsBuilder generationSettings = builder.getGenerationSettings();
+                var generationSettings = builder.getGenerationSettings();
                 this.features.forEach(holder -> generationSettings.addFeature(this.step, holder));
             }
         }
@@ -105,7 +105,7 @@ public final class ForgeBiomeModifiers {
         @Override
         public void modify(Holder<Biome> biome, Phase phase, Builder builder) {
             if (phase == Phase.REMOVE && this.biomes.contains(biome)) {
-                BiomeGenerationSettingsBuilder generationSettings = builder.getGenerationSettings();
+                var generationSettings = builder.getGenerationSettings();
                 for (Decoration step : this.steps)
                     generationSettings.getFeatures(step).removeIf(this.features::contains);
             }

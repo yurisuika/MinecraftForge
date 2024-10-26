@@ -8,72 +8,64 @@ package net.minecraftforge.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderStateShard.TextureStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.TriState;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraftforge.common.util.NonNullLazy;
 import net.minecraftforge.common.util.NonNullSupplier;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@SuppressWarnings("deprecation")
-public enum ForgeRenderTypes
-{
-    ITEM_LAYERED_SOLID(()-> getItemLayeredSolid(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_LAYERED_CUTOUT(()-> getItemLayeredCutout(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_LAYERED_CUTOUT_MIPPED(()-> getItemLayeredCutoutMipped(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_LAYERED_TRANSLUCENT(()-> getItemLayeredTranslucent(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_UNSORTED_TRANSLUCENT(()-> getUnsortedTranslucent(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_UNLIT_TRANSLUCENT(()-> getUnlitTranslucent(TextureAtlas.LOCATION_BLOCKS)),
-    ITEM_UNSORTED_UNLIT_TRANSLUCENT(()-> getUnlitTranslucent(TextureAtlas.LOCATION_BLOCKS, false)),
-    TRANSLUCENT_ON_PARTICLES_TARGET(() -> getTranslucentParticlesTarget(TextureAtlas.LOCATION_BLOCKS));
+public enum ForgeRenderTypes {
+    ITEM_LAYERED_SOLID(()-> getItemLayeredSolid(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_LAYERED_CUTOUT(()-> getItemLayeredCutout(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_LAYERED_CUTOUT_MIPPED(()-> getItemLayeredCutoutMipped(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_LAYERED_TRANSLUCENT(()-> getItemLayeredTranslucent(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_UNSORTED_TRANSLUCENT(()-> getUnsortedTranslucent(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_UNLIT_TRANSLUCENT(()-> getUnlitTranslucent(InventoryMenu.BLOCK_ATLAS)),
+    ITEM_UNSORTED_UNLIT_TRANSLUCENT(()-> getUnlitTranslucent(InventoryMenu.BLOCK_ATLAS, false)),
+    TRANSLUCENT_ON_PARTICLES_TARGET(() -> getTranslucentParticlesTarget(InventoryMenu.BLOCK_ATLAS));
 
-    public static boolean enableTextTextureLinearFiltering = false;
+    public static TriState enableTextTextureLinearFiltering = TriState.FALSE;
 
     /**
      * @return A RenderType fit for multi-layer solid item rendering.
      */
-    public static RenderType getItemLayeredSolid(ResourceLocation textureLocation)
-    {
+    public static RenderType getItemLayeredSolid(ResourceLocation textureLocation) {
         return Internal.LAYERED_ITEM_SOLID.apply(textureLocation);
     }
 
     /**
      * @return A RenderType fit for multi-layer cutout item item rendering.
      */
-    public static RenderType getItemLayeredCutout(ResourceLocation textureLocation)
-    {
+    public static RenderType getItemLayeredCutout(ResourceLocation textureLocation) {
         return Internal.LAYERED_ITEM_CUTOUT.apply(textureLocation);
     }
 
     /**
      * @return A RenderType fit for multi-layer cutout-mipped item rendering.
      */
-    public static RenderType getItemLayeredCutoutMipped(ResourceLocation textureLocation)
-    {
+    public static RenderType getItemLayeredCutoutMipped(ResourceLocation textureLocation) {
         return Internal.LAYERED_ITEM_CUTOUT_MIPPED.apply(textureLocation);
     }
 
     /**
      * @return A RenderType fit for multi-layer translucent item rendering.
      */
-    public static RenderType getItemLayeredTranslucent(ResourceLocation textureLocation)
-    {
+    public static RenderType getItemLayeredTranslucent(ResourceLocation textureLocation) {
         return Internal.LAYERED_ITEM_TRANSLUCENT.apply(textureLocation);
     }
 
     /**
      * @return A RenderType fit for translucent item/entity rendering, but with depth sorting disabled.
      */
-    public static RenderType getUnsortedTranslucent(ResourceLocation textureLocation)
-    {
+    public static RenderType getUnsortedTranslucent(ResourceLocation textureLocation) {
         return Internal.UNSORTED_TRANSLUCENT.apply(textureLocation);
     }
 
@@ -81,8 +73,7 @@ public enum ForgeRenderTypes
      * @return A RenderType fit for translucent item/entity rendering, but with diffuse lighting disabled
      * so that fullbright quads look correct.
      */
-    public static RenderType getUnlitTranslucent(ResourceLocation textureLocation)
-    {
+    public static RenderType getUnlitTranslucent(ResourceLocation textureLocation) {
         return Internal.UNLIT_TRANSLUCENT_SORTED.apply(textureLocation);
     }
 
@@ -91,72 +82,63 @@ public enum ForgeRenderTypes
      * so that fullbright quads look correct.
      * @param sortingEnabled If false, depth sorting will not be performed.
      */
-    public static RenderType getUnlitTranslucent(ResourceLocation textureLocation, boolean sortingEnabled)
-    {
+    public static RenderType getUnlitTranslucent(ResourceLocation textureLocation, boolean sortingEnabled) {
         return (sortingEnabled ? Internal.UNLIT_TRANSLUCENT_SORTED : Internal.UNLIT_TRANSLUCENT_UNSORTED).apply(textureLocation);
     }
 
     /**
      * @return Same as {@link RenderType#entityCutout(ResourceLocation)}, but with mipmapping enabled.
      */
-    public static RenderType getEntityCutoutMipped(ResourceLocation textureLocation)
-    {
+    public static RenderType getEntityCutoutMipped(ResourceLocation textureLocation) {
         return Internal.LAYERED_ITEM_CUTOUT_MIPPED.apply(textureLocation);
     }
 
     /**
      * @return Replacement of {@link RenderType#text(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getText(ResourceLocation locationIn)
-    {
+    public static RenderType getText(ResourceLocation locationIn) {
         return Internal.TEXT.apply(locationIn);
     }
 
     /**
      * @return Replacement of {@link RenderType#textIntensity(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getTextIntensity(ResourceLocation locationIn)
-    {
+    public static RenderType getTextIntensity(ResourceLocation locationIn) {
         return Internal.TEXT_INTENSITY.apply(locationIn);
     }
 
     /**
      * @return Replacement of {@link RenderType#textPolygonOffset(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getTextPolygonOffset(ResourceLocation locationIn)
-    {
+    public static RenderType getTextPolygonOffset(ResourceLocation locationIn) {
         return Internal.TEXT_POLYGON_OFFSET.apply(locationIn);
     }
 
     /**
      * @return Replacement of {@link RenderType#textIntensityPolygonOffset(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getTextIntensityPolygonOffset(ResourceLocation locationIn)
-    {
+    public static RenderType getTextIntensityPolygonOffset(ResourceLocation locationIn) {
         return Internal.TEXT_INTENSITY_POLYGON_OFFSET.apply(locationIn);
     }
 
     /**
      * @return Replacement of {@link RenderType#textSeeThrough(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getTextSeeThrough(ResourceLocation locationIn)
-    {
+    public static RenderType getTextSeeThrough(ResourceLocation locationIn) {
         return Internal.TEXT_SEETHROUGH.apply(locationIn);
     }
 
     /**
      * @return Replacement of {@link RenderType#textIntensitySeeThrough(ResourceLocation)}, but with optional linear texture filtering.
      */
-    public static RenderType getTextIntensitySeeThrough(ResourceLocation locationIn)
-    {
+    public static RenderType getTextIntensitySeeThrough(ResourceLocation locationIn) {
         return Internal.TEXT_INTENSITY_SEETHROUGH.apply(locationIn);
     }
 
     /**
-     * @return A variation of {@link RenderType#translucent()} that uses {@link OutputStateShard#PARTICLES_TARGET} to allow fabulous transparency sorting when using {@link RenderLevelStageEvent}
+     * @return A variation of {@link RenderType#translucent()} that uses {@link OutputStateShard#PARTICLES_TARGET}
      */
-    public static RenderType getTranslucentParticlesTarget(ResourceLocation locationIn)
-    {
+    public static RenderType getTranslucentParticlesTarget(ResourceLocation locationIn) {
         return Internal.TRANSLUCENT_PARTICLES_TARGET.apply(locationIn);
     }
 
@@ -166,35 +148,29 @@ public enum ForgeRenderTypes
 
     private final NonNullSupplier<RenderType> renderTypeSupplier;
 
-    ForgeRenderTypes(NonNullSupplier<RenderType> renderTypeSupplier)
-    {
+    ForgeRenderTypes(NonNullSupplier<RenderType> renderTypeSupplier) {
         // Wrap in a Lazy<> to avoid running the supplier more than once.
         this.renderTypeSupplier = NonNullLazy.of(renderTypeSupplier);
     }
 
-    public RenderType get()
-    {
+    public RenderType get() {
         return renderTypeSupplier.get();
     }
 
+    private static class Internal extends RenderType {
+        private static final ShaderStateShard RENDERTYPE_ENTITY_TRANSLUCENT_UNLIT_SHADER = new ShaderStateShard(ForgeHooksClient.SHADER_UNLIT_TRANSLUCENT.get());
 
-    private static class Internal extends RenderType
-    {
-        private static final ShaderStateShard RENDERTYPE_ENTITY_TRANSLUCENT_UNLIT_SHADER = new ShaderStateShard(ForgeHooksClient.ClientEvents::getEntityTranslucentUnlitShader);
-
-        private Internal(String name, VertexFormat fmt, VertexFormat.Mode glMode, int size, boolean doCrumbling, boolean depthSorting, Runnable onEnable, Runnable onDisable)
-        {
+        private Internal(String name, VertexFormat fmt, VertexFormat.Mode glMode, int size, boolean doCrumbling, boolean depthSorting, Runnable onEnable, Runnable onDisable) {
             super(name, fmt, glMode, size, doCrumbling, depthSorting, onEnable, onDisable);
             throw new IllegalStateException("This class must not be instantiated");
         }
 
         public static Function<ResourceLocation, RenderType> UNSORTED_TRANSLUCENT = Util.memoize(Internal::unsortedTranslucent);
-        private static RenderType unsortedTranslucent(ResourceLocation textureLocation)
-        {
+        private static RenderType unsortedTranslucent(ResourceLocation textureLocation) {
             final boolean sortingEnabled = false;
             CompositeState renderState = CompositeState.builder()
                     .setShaderState(RenderType.RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
-                    .setTextureState(new TextureStateShard(textureLocation, false, false))
+                    .setTextureState(new TextureStateShard(textureLocation, TriState.FALSE, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setCullState(NO_CULL)
                     .setLightmapState(LIGHTMAP)
@@ -203,25 +179,26 @@ public enum ForgeRenderTypes
             return create("forge_entity_unsorted_translucent", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, sortingEnabled, renderState);
         }
 
-        private static final BiFunction<ResourceLocation, Boolean, RenderType> ENTITY_TRANSLUCENT = Util.memoize((p_173227_, p_173228_) -> {
+        /*
+        private static final BiFunction<ResourceLocation, Boolean, RenderType> ENTITY_TRANSLUCENT = Util.memoize((textureLocation, composite) -> {
             RenderType.CompositeState rendertype$compositestate = RenderType.CompositeState.builder()
                     .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(p_173227_, false, false))
+                    .setTextureState(new TextureStateShard(textureLocation, TriState.FALSE, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setCullState(NO_CULL)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)
-                    .createCompositeState(p_173228_);
+                    .createCompositeState(composite);
             return create("entity_translucent", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true, rendertype$compositestate);
         });
+        */
 
         public static Function<ResourceLocation, RenderType> UNLIT_TRANSLUCENT_SORTED = Util.memoize(tex -> Internal.unlitTranslucent(tex, true));
         public static Function<ResourceLocation, RenderType> UNLIT_TRANSLUCENT_UNSORTED = Util.memoize(tex -> Internal.unlitTranslucent(tex, false));
-        private static RenderType unlitTranslucent(ResourceLocation textureLocation, boolean sortingEnabled)
-        {
+        private static RenderType unlitTranslucent(ResourceLocation textureLocation, boolean sortingEnabled) {
             CompositeState renderState = CompositeState.builder()
                     .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_UNLIT_SHADER)
-                    .setTextureState(new TextureStateShard(textureLocation, false, false))
+                    .setTextureState(new TextureStateShard(textureLocation, TriState.FALSE, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setCullState(NO_CULL)
                     .setLightmapState(LIGHTMAP)
@@ -234,7 +211,7 @@ public enum ForgeRenderTypes
         private static RenderType layeredItemSolid(ResourceLocation locationIn) {
             RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
                     .setShaderState(RenderType.RENDERTYPE_ENTITY_SOLID_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(locationIn, false, false))
+                    .setTextureState(new TextureStateShard(locationIn, TriState.FALSE, false))
                     .setTransparencyState(NO_TRANSPARENCY)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)
@@ -246,7 +223,7 @@ public enum ForgeRenderTypes
         private static RenderType layeredItemCutout(ResourceLocation locationIn) {
             RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
                     .setShaderState(RenderType.RENDERTYPE_ENTITY_CUTOUT_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(locationIn, false, false))
+                    .setTextureState(new TextureStateShard(locationIn, TriState.FALSE, false))
                     .setTransparencyState(NO_TRANSPARENCY)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)
@@ -258,7 +235,7 @@ public enum ForgeRenderTypes
         private static RenderType layeredItemCutoutMipped(ResourceLocation locationIn) {
             RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
                     .setShaderState(RenderType.RENDERTYPE_ENTITY_SMOOTH_CUTOUT_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(locationIn, false, true))
+                    .setTextureState(new TextureStateShard(locationIn, TriState.FALSE, true))
                     .setTransparencyState(NO_TRANSPARENCY)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)
@@ -270,7 +247,7 @@ public enum ForgeRenderTypes
         private static RenderType layeredItemTranslucent(ResourceLocation locationIn) {
             RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
                     .setShaderState(RenderType.RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(locationIn, false, false))
+                    .setTextureState(new TextureStateShard(locationIn, TriState.FALSE, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)
@@ -354,7 +331,7 @@ public enum ForgeRenderTypes
         private static RenderType getTranslucentParticlesTarget(ResourceLocation locationIn) {
             RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
                     .setShaderState(RENDERTYPE_TRANSLUCENT_SHADER)
-                    .setTextureState(new RenderStateShard.TextureStateShard(locationIn, false, true))
+                    .setTextureState(new TextureStateShard(locationIn, TriState.FALSE, true))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setLightmapState(LIGHTMAP)
                     .setOutputState(PARTICLES_TARGET)
@@ -363,16 +340,15 @@ public enum ForgeRenderTypes
         }
     }
 
-    private static class CustomizableTextureState extends TextureStateShard
-    {
-        private CustomizableTextureState(ResourceLocation resLoc, Supplier<Boolean> blur, Supplier<Boolean> mipmap)
-        {
+    private static class CustomizableTextureState extends TextureStateShard {
+        private CustomizableTextureState(ResourceLocation resLoc, Supplier<TriState> blur, Supplier<Boolean> mipmap) {
             super(resLoc, blur.get(), mipmap.get());
             this.setupState = () -> {
                 this.blur = blur.get();
                 this.mipmap = mipmap.get();
-                TextureManager texturemanager = Minecraft.getInstance().getTextureManager();
-                texturemanager.getTexture(resLoc).setFilter(this.blur, this.mipmap);
+                TextureManager manager = Minecraft.getInstance().getTextureManager();
+                var texture = manager.getTexture(resLoc);
+                texture.setFilter(this.blur.toBoolean(texture.getDefaultBlur()), this.mipmap);
                 RenderSystem.setShaderTexture(0, resLoc);
             };
         }

@@ -9,21 +9,22 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.advancements.critereon.NbtPredicate;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -33,34 +34,41 @@ public class PartialNBTIngredient extends AbstractIngredient {
         return new Builder();
     }
 
-    private final List<Item> items;
     private final CompoundTag nbt;
     private final NbtPredicate predicate;
 
-    private PartialNBTIngredient(List<Item> items, CompoundTag nbt) {
-        super(items.stream().map(item -> {
-            var stack = new ItemStack(item);
-            // copy NBT to prevent the stack from modifying the original, as capabilities or vanilla item durability will modify the tag
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt.copy()));
-            return new Ingredient.ItemValue(stack);
-        }));
+    private PartialNBTIngredient(HolderSet<Item> items, CompoundTag nbt) {
+        super(items);
 
-        if (items.isEmpty())
+        if (items.size() == 0)
             throw new IllegalArgumentException("Cannot create a PartialNBTIngredient with no items");
 
-        this.items = Collections.unmodifiableList(items);
         this.nbt = nbt;
         this.predicate = new NbtPredicate(nbt);
     }
 
     /** Creates a new ingredient matching any item from the list, containing the given NBT */
+    @SuppressWarnings("deprecation")
     public static PartialNBTIngredient of(CompoundTag nbt, ItemLike... items) {
-        return new PartialNBTIngredient(Arrays.stream(items).map(ItemLike::asItem).toList(), nbt);
+        return of(
+            HolderSet.direct(
+                Arrays.stream(items)
+                    .map(ItemLike::asItem)
+                    .map(Item::builtInRegistryHolder)
+                    .toList()
+            ),
+            nbt);
     }
 
     /** Creates a new ingredient matching the given item, containing the given NBT  */
+    @SuppressWarnings("deprecation")
     public static PartialNBTIngredient of(ItemLike item, CompoundTag nbt) {
-        return new PartialNBTIngredient(List.of(item.asItem()), nbt);
+        return of(HolderSet.direct(item.asItem().builtInRegistryHolder()), nbt);
+    }
+
+    /** Creates a new ingredient matching the given item, containing the given NBT  */
+    public static PartialNBTIngredient of(HolderSet<Item> items, CompoundTag nbt) {
+        return new PartialNBTIngredient(items, nbt);
     }
 
     @Override
@@ -68,7 +76,7 @@ public class PartialNBTIngredient extends AbstractIngredient {
         if (input == null)
             return false;
         var nbt = input.get(DataComponents.CUSTOM_DATA);
-        return nbt != null && items.contains(input.getItem()) && predicate.matches(nbt.copyTag());
+        return nbt != null && input.is(this.values) && predicate.matches(nbt.copyTag());
     }
 
     @Override
@@ -83,12 +91,14 @@ public class PartialNBTIngredient extends AbstractIngredient {
 
     public static final MapCodec<PartialNBTIngredient> CODEC = RecordCodecBuilder.mapCodec(builder ->
         builder.group(
-            ForgeRegistries.ITEMS.getCodec().listOf().fieldOf("items").forGetter(i -> i.items),
+            Ingredient.NON_AIR_HOLDER_SET_CODEC.fieldOf("items").forGetter(i -> i.values),
             TagParser.AS_CODEC.fieldOf("nbt").forGetter(i -> i.nbt)
         ).apply(builder, PartialNBTIngredient::new)
     );
 
     public static final IIngredientSerializer<PartialNBTIngredient> SERIALIZER = new IIngredientSerializer<>() {
+        private final StreamCodec<RegistryFriendlyByteBuf, HolderSet<Item>> HOLDER_SET = ByteBufCodecs.holderSet(Registries.ITEM);
+
         @Override
         public MapCodec<? extends PartialNBTIngredient> codec() {
             return CODEC;
@@ -96,14 +106,14 @@ public class PartialNBTIngredient extends AbstractIngredient {
 
         @Override
         public PartialNBTIngredient read(RegistryFriendlyByteBuf buffer) {
-            var items = buffer.readList(b -> Item.STREAM_CODEC.decode(buffer).get());
+            var items = HOLDER_SET.decode(buffer);
             var nbt = buffer.readNbt();
             return new PartialNBTIngredient(items, Objects.requireNonNull(nbt));
         }
 
         @Override
         public void write(RegistryFriendlyByteBuf buffer, PartialNBTIngredient value) {
-            buffer.writeCollection(value.items, (b, item) -> Item.STREAM_CODEC.encode(buffer, item.builtInRegistryHolder()));
+            HOLDER_SET.encode(buffer, value.values);
             buffer.writeNbt(value.nbt);
         }
     };

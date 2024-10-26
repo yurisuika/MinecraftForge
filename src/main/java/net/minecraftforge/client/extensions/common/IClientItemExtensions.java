@@ -12,6 +12,8 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -34,17 +36,14 @@ import java.util.function.Consumer;
  *
  * @see Item#initializeClient(Consumer)
  */
-public interface IClientItemExtensions
-{
+public interface IClientItemExtensions {
     IClientItemExtensions DEFAULT = new IClientItemExtensions() { };
 
-    static IClientItemExtensions of(ItemStack stack)
-    {
+    static IClientItemExtensions of(ItemStack stack) {
         return of(stack.getItem());
     }
 
-    static IClientItemExtensions of(Item item)
-    {
+    static IClientItemExtensions of(Item item) {
         return item.getRenderPropertiesInternal() instanceof IClientItemExtensions e ? e : DEFAULT;
     }
 
@@ -57,8 +56,7 @@ public interface IClientItemExtensions
      * @return A {@link Font} or null to use the default
      */
     @Nullable
-    default Font getFont(ItemStack stack, FontContext context)
-    {
+    default Font getFont(ItemStack stack, FontContext context) {
         return null;
     }
 
@@ -72,8 +70,7 @@ public interface IClientItemExtensions
       * @return A custom ArmPose that can be used to define movement of the arm
       */
     @Nullable
-    default HumanoidModel.ArmPose getArmPose(LivingEntity entityLiving, InteractionHand hand, ItemStack itemStack)
-    {
+    default HumanoidModel.ArmPose getArmPose(LivingEntity entityLiving, InteractionHand hand, ItemStack itemStack) {
         return null;
     }
 
@@ -96,7 +93,7 @@ public interface IClientItemExtensions
     /**
      * Queries the humanoid armor model for this item when it's equipped.
      *
-     * @param livingEntity  The entity wearing the armor
+     * @param state         The entity wearing the armor
      * @param itemStack     The item stack
      * @param equipmentSlot The slot the item is in
      * @param original      The original armor model. Will have attributes set.
@@ -104,14 +101,13 @@ public interface IClientItemExtensions
      * @see #getGenericArmorModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)
      */
     @NotNull
-    default HumanoidModel<?> getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original)
-    {
+    default HumanoidModel<?> getHumanoidArmorModel(LivingEntityRenderState state, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
         return original;
     }
 
     /**
      * Queries the armor model for this item when it's equipped. Useful in place of
-     * {@link #getHumanoidArmorModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)} for wrapping the original
+     * {@link #getHumanoidArmorModel(LivingEntityRenderState, ItemStack, EquipmentSlot, HumanoidModel)} for wrapping the original
      * model or returning anything non-standard.
      * <p>
      * If you override this method you are responsible for copying any properties you care about from the original model.
@@ -121,14 +117,12 @@ public interface IClientItemExtensions
      * @param equipmentSlot The slot the item is in
      * @param original      The original armor model. Will have attributes set.
      * @return A Model to be rendered. Relevant properties must be copied over manually.
-     * @see #getHumanoidArmorModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)
+     * @see #getHumanoidArmorModel(LivingEntityRenderState, ItemStack, EquipmentSlot, HumanoidModel)
      */
     @NotNull
-    default Model getGenericArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original)
-    {
-        HumanoidModel<?> replacement = getHumanoidArmorModel(livingEntity, itemStack, equipmentSlot, original);
-        if (replacement != original)
-        {
+    default Model getGenericArmorModel(HumanoidRenderState state, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
+        HumanoidModel<?> replacement = getHumanoidArmorModel(state, itemStack, equipmentSlot, original);
+        if (replacement != original) {
             ForgeHooksClient.copyModelProperties(original, replacement);
             return replacement;
         }
@@ -146,9 +140,7 @@ public interface IClientItemExtensions
      * @param height      Viewport height
      * @param partialTick Partial tick time, useful for interpolation
      */
-    default void renderHelmetOverlay(ItemStack stack, Player player, int width, int height, float partialTick)
-    {
-    }
+    default void renderHelmetOverlay(ItemStack stack, Player player, int width, int height, float partialTick) { }
 
     /**
      * Queries this item's renderer.
@@ -158,13 +150,11 @@ public interface IClientItemExtensions
      * <p>
      * By default, returns vanilla's block entity renderer.
      */
-    default BlockEntityWithoutLevelRenderer getCustomRenderer()
-    {
+    default BlockEntityWithoutLevelRenderer getCustomRenderer() {
         return Minecraft.getInstance().getItemRenderer().getBlockEntityRenderer();
     }
 
-    enum FontContext
-    {
+    enum FontContext {
         /**
          * Used to display the amount of items in the {@link ItemStack}.
          */

@@ -9,9 +9,9 @@ import com.google.common.collect.ImmutableSet;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
+import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParam;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
@@ -35,13 +35,13 @@ public record CanToolPerformAction(ToolAction action) implements LootItemConditi
     }
 
     @Override
-    public @NotNull Set<LootContextParam<?>> getReferencedContextParams() {
+    public @NotNull Set<ContextKey<?>> getReferencedContextParams() {
         return ImmutableSet.of(LootContextParams.TOOL);
     }
 
     @Override
     public boolean test(LootContext ctx) {
-        ItemStack itemstack = ctx.getParamOrNull(LootContextParams.TOOL);
+        ItemStack itemstack = ctx.getOptionalParameter(LootContextParams.TOOL);
         return itemstack != null && itemstack.canPerformAction(this.action);
     }
 

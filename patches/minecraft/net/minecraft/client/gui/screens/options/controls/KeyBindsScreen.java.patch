@@ -9,15 +9,15 @@
              }
  
              this.keyBindsList.resetMappingAndUpdateButtons();
-@@ -73,11 +_,14 @@
+@@ -73,11 +_,12 @@
      public boolean keyPressed(int p_342715_, int p_342862_, int p_345515_) {
          if (this.selectedKey != null) {
              if (p_342715_ == 256) {
+-                this.selectedKey.setKey(InputConstants.UNKNOWN);
 +                this.selectedKey.setKeyModifierAndCode(null, InputConstants.UNKNOWN);
-                 this.options.setKey(this.selectedKey, InputConstants.UNKNOWN);
              } else {
+-                this.selectedKey.setKey(InputConstants.getKey(p_342715_, p_342862_));
 +                this.selectedKey.setKeyModifierAndCode(null, InputConstants.getKey(p_342715_, p_342862_));
-                 this.options.setKey(this.selectedKey, InputConstants.getKey(p_342715_, p_342862_));
              }
  
 +            if (p_342715_ == 256 || !net.minecraftforge.client.settings.KeyModifier.isKeyCodeModifier(this.selectedKey.getKey()))

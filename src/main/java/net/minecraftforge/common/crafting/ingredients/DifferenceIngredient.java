@@ -8,16 +8,16 @@ package net.minecraftforge.common.crafting.ingredients;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparators;
-import it.unimi.dsi.fastutil.ints.IntList;
+import net.minecraft.core.Holder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.StackedContents;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /** Ingredient that matches everything from the first ingredient that is not included in the second ingredient */
 public class DifferenceIngredient extends AbstractIngredient {
@@ -33,8 +33,7 @@ public class DifferenceIngredient extends AbstractIngredient {
 
     private final Ingredient base;
     private final Ingredient subtracted;
-    private ItemStack[] filteredMatchingStacks;
-    private IntList packedMatchingStacks;
+    private List<Holder<Item>> items = null;
 
     private DifferenceIngredient(Ingredient base, Ingredient subtracted) {
         this.base = base;
@@ -48,44 +47,31 @@ public class DifferenceIngredient extends AbstractIngredient {
         return base.test(stack) && !subtracted.test(stack);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    public ItemStack[] getItems() {
-        if (this.filteredMatchingStacks == null)
-            this.filteredMatchingStacks = Arrays.stream(base.getItems())
-                                                .filter(stack -> !subtracted.test(stack))
-                                                .toArray(ItemStack[]::new);
-        return filteredMatchingStacks;
-    }
+    public List<Holder<Item>> items() {
+        if (this.items == null) {
+            var tmp = new ArrayList<Holder<Item>>();
 
-    @Override
-    public boolean isEmpty() {
-        return base.isEmpty();
+            for (var base : this.base.items()) {
+                boolean match = false;
+                for (var item : this.subtracted.items()) {
+                    if (base.is(item)) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match)
+                    tmp.add(base);
+            }
+            this.items = Collections.unmodifiableList(tmp);
+        }
+        return items;
     }
 
     @Override
     public boolean isSimple() {
         return base.isSimple() && subtracted.isSimple();
-    }
-
-    @Override
-    protected void invalidate() {
-        super.invalidate();
-        this.filteredMatchingStacks = null;
-        this.packedMatchingStacks = null;
-    }
-
-    @Override
-    public IntList getStackingIds() {
-        if (this.packedMatchingStacks == null || checkInvalidation()) {
-            markValid();
-            var matchingStacks = getItems();
-            this.packedMatchingStacks = new IntArrayList(matchingStacks.length);
-            for (var stack : matchingStacks)
-                this.packedMatchingStacks.add(StackedContents.getStackingIndex(stack));
-
-            this.packedMatchingStacks.sort(IntComparators.NATURAL_COMPARATOR);
-        }
-        return packedMatchingStacks;
     }
 
     @Override

@@ -22,7 +22,6 @@ import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.test.BaseTestMod;
 import net.minecraftforge.fml.common.Mod;
@@ -43,7 +42,7 @@ public class ConditionalLootPools extends BaseTestMod {
     public static final String MODID = "conditional_loot_test";
 
     private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
-    private static final RegistryObject<Block> TEST_BLOCK = BLOCKS.register("test", () -> new Block(BlockBehaviour.Properties.of()));
+    private static final RegistryObject<Block> TEST_BLOCK = BLOCKS.register("test", () -> new Block(name(MODID, "test", BlockBehaviour.Properties.of())));
 
     public ConditionalLootPools(FMLJavaModLoadingContext context) {
         super(context);

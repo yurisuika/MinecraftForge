@@ -20,7 +20,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.AbstractBoat;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -323,7 +323,7 @@ public class FluidType {
      * @param boat the boat trying to be used on the fluid
      * @return {@code true} if the boat can be used, {@code false} otherwise
      */
-    public boolean supportsBoating(Boat boat) {
+    public boolean supportsBoating(AbstractBoat boat) {
         return this.supportsBoating;
     }
 
@@ -334,20 +334,20 @@ public class FluidType {
      * @param boat the boat trying to be used on the fluid
      * @return {@code true} if the boat can be used, {@code false} otherwise
      */
-    public boolean supportsBoating(FluidState state, Boat boat) {
+    public boolean supportsBoating(FluidState state, AbstractBoat boat) {
         return this.supportsBoating(boat);
     }
 
     /**
      * When {@code false}, the fluid will no longer update its height value while
-     * within a boat while it is not within a fluid ({@link Boat#isUnderWater()}.
+     * within a boat while it is not within a fluid ({@link AbstractBoat#isUnderWater()}.
      *
      * @param state the state of the fluid the rider is within
      * @param boat the boat the rider is within that is not inside a fluid
      * @param rider the rider of the boat
      * @return {@code true} if the fluid height should be updated, {@code false} otherwise
      */
-    public boolean shouldUpdateWhileBoating(FluidState state, Boat boat, Entity rider) {
+    public boolean shouldUpdateWhileBoating(FluidState state, AbstractBoat boat, Entity rider) {
         return !this.supportsBoating(state, boat);
     }
 

@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/main/Main.java
 +++ b/net/minecraft/client/main/Main.java
-@@ -111,8 +_,8 @@
+@@ -120,8 +_,8 @@
              CrashReport.preload();
              logger = LogUtils.getLogger();
              s1 = "Bootstrap";
@@ -9,4 +9,4 @@
 +            net.minecraftforge.fml.loading.BackgroundWaiter.runAndTick(Bootstrap::bootStrap, net.minecraftforge.fml.loading.FMLLoader.progressWindowTick);
              Bootstrap.validate();
              s1 = "Argument parsing";
-             List<String> list = optionset.valuesOf(optionspec27);
+             List<String> list = optionset.valuesOf(optionspec29);

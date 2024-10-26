@@ -35,7 +35,7 @@
 @@ -52,6 +_,7 @@
                      PackOutput.PathProvider packoutput$pathprovider = this.output.createRegistryElementsPathProvider(resourcekey);
                      return CompletableFuture.allOf(
-                         p_341079_.listElements()
+                         p_358460_.listElements()
 +                            .filter(holder -> this.namespacePredicate.test(holder.key().location().getNamespace()))
                              .map(
                                  p_256105_ -> dumpValue(

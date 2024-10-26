@@ -316,8 +316,7 @@ public class GameData {
     }
 
     @SuppressWarnings("deprecation")
-    public static void postRegisterEvents()
-    {
+    public static void postRegisterEvents() {
         Set<ResourceLocation> keySet = new HashSet<>(RegistryManager.ACTIVE.registries.keySet());
         keySet.addAll(RegistryManager.getVanillaRegistryKeys());
 
@@ -326,13 +325,11 @@ public class GameData {
         ordered.addAll(keySet.stream().sorted(ResourceLocation::compareNamespaced).toList());
 
         RuntimeException aggregate = new RuntimeException();
-        for (ResourceLocation rootRegistryName : ordered)
-        {
-            try
-            {
+        for (ResourceLocation rootRegistryName : ordered) {
+            try {
                 ResourceKey<? extends Registry<?>> registryKey = ResourceKey.createRegistryKey(rootRegistryName);
                 ForgeRegistry<?> forgeRegistry = RegistryManager.ACTIVE.getRegistry(rootRegistryName);
-                Registry<?> vanillaRegistry = BuiltInRegistries.REGISTRY.get(rootRegistryName);
+                Registry<?> vanillaRegistry = BuiltInRegistries.REGISTRY.getValue(rootRegistryName);
                 RegisterEvent registerEvent = new RegisterEvent(registryKey, forgeRegistry, vanillaRegistry);
 
                 StartupMessageManager.modLoaderConsumer().ifPresent(s -> s.accept("REGISTERING " + registryKey.location()));
@@ -346,11 +343,11 @@ public class GameData {
                 LOGGER.debug(REGISTRIES, "Applying holder lookups: {}", registryKey.location());
                 ObjectHolderRegistry.applyObjectHolders(registryKey.location()::equals);
                 LOGGER.debug(REGISTRIES, "Holder lookups applied: {}", registryKey.location());
-            } catch (Throwable t)
-            {
+            } catch (Throwable t) {
                 aggregate.addSuppressed(t);
             }
         }
+
         if (aggregate.getSuppressed().length > 0)
         {
             LOGGER.fatal("Failed to register some entries, see suppressed exceptions for details", aggregate);
@@ -358,8 +355,7 @@ public class GameData {
             revertTo(RegistryManager.VANILLA, false);
             LOGGER.fatal("Detected errors during registry event dispatch, roll back to VANILLA complete");
             throw aggregate;
-        } else
-        {
+        } else {
             ForgeHooks.modifyAttributes();
             SpawnPlacements.fireSpawnPlacementEvent();
             CreativeModeTabRegistry.sortTabs();

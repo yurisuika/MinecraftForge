@@ -165,6 +165,7 @@ public record PacketDistributor<T>(BiFunction<PacketDistributor<T>, T, Consumer<
         return p -> ((ServerChunkCache)entity.getCommandSenderWorld().getChunkSource()).broadcastAndSend(entity, p);
     }
 
+    @SuppressWarnings("resource")
     private Consumer<Packet<?>> trackingChunk(LevelChunk chunk) {
         return p -> ((ServerChunkCache)chunk.getLevel().getChunkSource()).chunkMap.getPlayers(chunk.getPos(), false).forEach(e -> e.connection.send(p));
     }

@@ -9,6 +9,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.BaseFireBlock;
@@ -338,7 +339,7 @@ public class BlockEvent extends Event {
         private final Entity entity;
         private final float fallDistance;
 
-        public FarmlandTrampleEvent(Level level, BlockPos pos, BlockState state, float fallDistance, Entity entity) {
+        public FarmlandTrampleEvent(ServerLevel level, BlockPos pos, BlockState state, float fallDistance, Entity entity) {
             super(level, pos, state);
             this.entity = entity;
             this.fallDistance = fallDistance;

@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/animal/sniffer/Sniffer.java
 +++ b/net/minecraft/world/entity/animal/sniffer/Sniffer.java
-@@ -300,8 +_,7 @@
+@@ -293,8 +_,7 @@
                  }
  
                  if (this.tickCount % 10 == 0) {

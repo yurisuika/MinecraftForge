@@ -10,25 +10,22 @@ import java.util.function.Consumer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.*;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.piglin.PiglinAi;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.ToolAction;
@@ -41,21 +38,6 @@ import org.jetbrains.annotations.Nullable;
 public interface IForgeItem {
     private Item self() {
         return (Item)this;
-    }
-
-    /**
-     * @deprecated In favor of {@link #getDefaultAttributeModifiers(ItemStack)} as it matches vanilla name, and not all cases that call this has the EquipmentSlot argument
-     */
-    @Deprecated(forRemoval = true, since = "1.21")
-    default ItemAttributeModifiers getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-        return getDefaultAttributeModifiers(stack);
-    }
-
-    /**
-     * ItemStack sensitive version of {@link Item#getDefaultAttributeModifiers}
-     */
-    default ItemAttributeModifiers getDefaultAttributeModifiers(ItemStack stack) {
-        return self().getDefaultAttributeModifiers();
     }
 
     /**
@@ -110,7 +92,7 @@ public interface IForgeItem {
      * @return True if piglins are neutral to players wearing this item in an armor slot
      */
     default boolean makesPiglinsNeutral(ItemStack stack, LivingEntity wearer) {
-        return stack.getItem() instanceof ArmorItem && ((ArmorItem) stack.getItem()).getMaterial() == ArmorMaterials.GOLD;
+        return stack.is(ItemTags.PIGLIN_SAFE_ARMOR);
     }
 
     /**
@@ -163,28 +145,15 @@ public interface IForgeItem {
     }
 
     /**
-     * ItemStack sensitive version of {@link Item#getCraftingRemainingItem()}.
+     * ItemStack sensitive version of {@link Item#getCraftingRemainder()}.
      * Returns a full ItemStack instance of the result.
      *
      * @param itemStack The current ItemStack
      * @return The resulting ItemStack
      */
     @SuppressWarnings("deprecation")
-    default ItemStack getCraftingRemainingItem(ItemStack itemStack) {
-        if (!hasCraftingRemainingItem(itemStack))
-            return ItemStack.EMPTY;
-        return new ItemStack(self().getCraftingRemainingItem());
-    }
-
-    /**
-     * ItemStack sensitive version of {@link Item#hasCraftingRemainingItem()}.
-     *
-     * @param stack The current item stack
-     * @return True if this item has a crafting remaining item
-     */
-    @SuppressWarnings("deprecation")
-    default boolean hasCraftingRemainingItem(ItemStack stack) {
-        return self().hasCraftingRemainingItem();
+    default ItemStack getCraftingRemainder(ItemStack itemStack) {
+        return self().getCraftingRemainder();
     }
 
     /**
@@ -324,10 +293,12 @@ public interface IForgeItem {
      * @param inner   Weither or not to use the inner texture layer.
      * @return Path of texture to bind, or null to use default
      */
+    /*
     @Nullable
-    default ResourceLocation getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, ArmorMaterial.Layer layer, boolean inner) {
+    default ResourceLocation getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, EquipmentModel.Layer layer, boolean inner) {
         return null;
     }
+    */
 
     /**
      * Called when a entity tries to play the 'swing' animation.
@@ -348,17 +319,6 @@ public interface IForgeItem {
      */
     default boolean canPerformAction(ItemStack stack, ToolAction toolAction) {
         return false;
-    }
-
-    /**
-     * ItemStack sensitive version of {@link Item#getEnchantmentValue()}.
-     *
-     * @param stack The ItemStack
-     * @return the enchantment value
-     */
-    @SuppressWarnings("deprecation")
-    default int getEnchantmentValue(ItemStack stack) {
-        return self().getEnchantmentValue();
     }
 
     /**
@@ -512,15 +472,15 @@ public interface IForgeItem {
     }
 
     /**
-     * Whether this Item can be used to hide player head for enderman.
+     * Whether this Item can be used to hide player the player from a monster
      *
      * @param stack the ItemStack
-     * @param player The player watching the enderman
-     * @param endermanEntity The enderman that the player look
-     * @return true if this Item can be used to hide player head for enderman
+     * @param player The player watching the monster
+     * @param monster The monster that the player look
+     * @return true if this Item can be used to hide player from monsters
      */
-    default boolean isEnderMask(ItemStack stack, Player player, EnderMan endermanEntity) {
-        return stack.getItem() == Blocks.CARVED_PUMPKIN.asItem();
+    default boolean isMonsterDisguise(ItemStack stack, Player player, Monster monster) {
+        return stack.is(ItemTags.GAZE_DISGUISE_EQUIPMENT);
     }
 
     /**

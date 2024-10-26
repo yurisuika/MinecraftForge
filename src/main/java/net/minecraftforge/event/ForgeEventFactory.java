@@ -15,7 +15,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.chunk.storage.SerializableChunkData;
+import net.minecraftforge.client.event.ToastAddEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -30,6 +33,7 @@ import com.mojang.brigadier.CommandDispatcher;
 
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -63,22 +67,9 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.AgeableMob;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.SlotAccess;
-import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Zombie;
@@ -257,8 +248,8 @@ public final class ForgeEventFactory {
         return post(event);
     }
 
-    public static NeighborNotifyEvent onNeighborNotify(Level level, BlockPos pos, BlockState state, EnumSet<Direction> notifiedSides, boolean forceRedstoneUpdate) {
-        return fire(new NeighborNotifyEvent(level, pos, state, notifiedSides, forceRedstoneUpdate));
+    public static boolean onNeighborNotify(Level level, BlockPos pos, BlockState state, EnumSet<Direction> notifiedSides, boolean forceRedstoneUpdate) {
+        return post(new NeighborNotifyEvent(level, pos, state, notifiedSides, forceRedstoneUpdate));
     }
 
     public static boolean doPlayerHarvestCheck(Player player, BlockState state, boolean success) {
@@ -278,7 +269,7 @@ public final class ForgeEventFactory {
         post(new PlayerDestroyItemEvent(player, stack, slot));
     }
 
-    public static boolean checkSpawnPlacements(EntityType<?> entityType, ServerLevelAccessor level, MobSpawnType spawnType, BlockPos pos, RandomSource random, boolean defaultResult) {
+    public static boolean checkSpawnPlacements(EntityType<?> entityType, ServerLevelAccessor level, EntitySpawnReason spawnType, BlockPos pos, RandomSource random, boolean defaultResult) {
         var result = fire(new SpawnPlacementCheck(entityType, level, spawnType, pos, random, defaultResult)).getResult();
         return result == Result.DEFAULT ? defaultResult : result == Result.ALLOW;
     }
@@ -292,7 +283,7 @@ public final class ForgeEventFactory {
      * @return True, if the position is valid, as determined by the contract of {@link PositionCheck}.
      * @see PositionCheck
      */
-    public static boolean checkSpawnPosition(Mob mob, ServerLevelAccessor level, MobSpawnType spawnType) {
+    public static boolean checkSpawnPosition(Mob mob, ServerLevelAccessor level, EntitySpawnReason spawnType) {
         var result = fire(new PositionCheck(mob, level, spawnType, null)).getResult();
         if (result == Result.DEFAULT)
             return mob.checkSpawnRules(level, spawnType) && mob.checkSpawnObstruction(level);
@@ -304,7 +295,7 @@ public final class ForgeEventFactory {
      * @see #CheckSpawnPosition
      * @implNote See in-line comments about custom spawn rules.
      */
-    public static boolean checkSpawnPositionSpawner(Mob mob, ServerLevelAccessor level, MobSpawnType spawnType, SpawnData spawnData, BaseSpawner spawner) {
+    public static boolean checkSpawnPositionSpawner(Mob mob, ServerLevelAccessor level, EntitySpawnReason spawnType, SpawnData spawnData, BaseSpawner spawner) {
         var result = fire(new PositionCheck(mob, level, spawnType, null)).getResult();
         if (result == Result.DEFAULT) {
             // Spawners do not evaluate Mob#checkSpawnRules if any custom rules are present. This is despite the fact that these two methods do not check the same things.
@@ -345,12 +336,12 @@ public final class ForgeEventFactory {
      */
     @Nullable
     @SuppressWarnings("deprecation") // Call to deprecated Mob#finalizeSpawn is expected.
-    public static SpawnGroupData onFinalizeSpawn(Mob mob, ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, @Nullable SpawnGroupData spawnData) {
+    public static SpawnGroupData onFinalizeSpawn(Mob mob, ServerLevelAccessor level, DifficultyInstance difficulty, EntitySpawnReason spawnType, @Nullable SpawnGroupData spawnData) {
         var event = new MobSpawnEvent.FinalizeSpawn(mob, level, mob.getX(), mob.getY(), mob.getZ(), difficulty, spawnType, spawnData, null, null);
         boolean cancel = post(event);
 
         if (!cancel)
-            return mob.finalizeSpawn(level, event.getDifficulty(), event.getSpawnType(), event.getSpawnData());
+            return mob.finalizeSpawn(level, event.getDifficulty(), event.getSpawnReason(), event.getSpawnData());
 
         return null;
     }
@@ -363,7 +354,7 @@ public final class ForgeEventFactory {
      */
     @Nullable
     public static MobSpawnEvent.FinalizeSpawn onFinalizeSpawnSpawner(Mob mob, ServerLevelAccessor level, DifficultyInstance difficulty, @Nullable SpawnGroupData spawnData, @Nullable CompoundTag spawnTag, BaseSpawner spawner) {
-        return fire(new MobSpawnEvent.FinalizeSpawn(mob, level, mob.getX(), mob.getY(), mob.getZ(), difficulty, MobSpawnType.SPAWNER, spawnData, spawnTag, spawner));
+        return fire(new MobSpawnEvent.FinalizeSpawn(mob, level, mob.getX(), mob.getY(), mob.getZ(), difficulty, EntitySpawnReason.SPAWNER, spawnData, spawnTag, spawner));
     }
 
     public static Result canEntityDespawn(Mob entity, ServerLevelAccessor level) {
@@ -469,23 +460,23 @@ public final class ForgeEventFactory {
     }
 
     @Nullable
-    public static InteractionResultHolder<ItemStack> onBucketUse(@NotNull Player player, @NotNull Level level, @NotNull ItemStack stack, @Nullable HitResult target) {
+    public static InteractionResult onBucketUse(@NotNull Player player, @NotNull Level level, @NotNull ItemStack stack, @Nullable HitResult target) {
         var event = new FillBucketEvent(player, stack, level, target);
         if (post(event))
-            return new InteractionResultHolder<ItemStack>(InteractionResult.FAIL, stack);
+            return InteractionResult.FAIL;
 
         if (event.getResult() == Result.ALLOW) {
             if (player.getAbilities().instabuild)
-                return new InteractionResultHolder<ItemStack>(InteractionResult.SUCCESS, stack);
+                return InteractionResult.SUCCESS.heldItemTransformedTo(stack);
 
             stack.shrink(1);
             if (stack.isEmpty())
-                return new InteractionResultHolder<ItemStack>(InteractionResult.SUCCESS, event.getFilledBucket());
+                return InteractionResult.SUCCESS.heldItemTransformedTo(event.getFilledBucket());
 
             if (!player.getInventory().add(event.getFilledBucket()))
                 player.drop(event.getFilledBucket(), false);
 
-            return new InteractionResultHolder<ItemStack>(InteractionResult.SUCCESS, stack);
+            return InteractionResult.SUCCESS.heldItemTransformedTo(stack);
         }
         return null;
     }
@@ -557,8 +548,8 @@ public final class ForgeEventFactory {
         return post(new ExplosionEvent.Start(level, explosion));
     }
 
-    public static void onExplosionDetonate(Level level, Explosion explosion, List<Entity> list, double diameter) {
-        post(new ExplosionEvent.Detonate(level, explosion, list));
+    public static void onExplosionDetonate(Level level, Explosion explosion, List<BlockPos> blocks, List<Entity> entities, double diameter) {
+        post(new ExplosionEvent.Detonate(level, explosion, blocks, entities));
     }
 
     public static boolean onCreateWorldSpawn(Level level, ServerLevelData settings) {
@@ -636,10 +627,10 @@ public final class ForgeEventFactory {
             return canContinueSleep == Result.ALLOW;
     }
 
-    public static InteractionResultHolder<ItemStack> onArrowNock(ItemStack item, Level level, Player player, InteractionHand hand, boolean hasAmmo) {
+    public static InteractionResult onArrowNock(ItemStack item, Level level, Player player, InteractionHand hand, boolean hasAmmo) {
         var event = new ArrowNockEvent(player, item, hand, level, hasAmmo);
         if (post(event))
-            return new InteractionResultHolder<ItemStack>(InteractionResult.FAIL, item);
+            return InteractionResult.FAIL;
         return event.getAction();
     }
 
@@ -681,7 +672,7 @@ public final class ForgeEventFactory {
         return !post(new LivingDestroyBlockEvent(entity, pos, state));
     }
 
-    public static boolean getMobGriefingEvent(Level level, @Nullable Entity entity) {
+    public static boolean getMobGriefingEvent(ServerLevel level, @Nullable Entity entity) {
         if (entity == null)
             return level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
 
@@ -887,11 +878,11 @@ public final class ForgeEventFactory {
         post(new LevelEvent.Save(level));
     }
 
-    public static void onChunkDataSave(ChunkAccess chunk, LevelAccessor world, CompoundTag data) {
+    public static void onChunkDataSave(ChunkAccess chunk, LevelAccessor world, SerializableChunkData data) {
         post(new ChunkDataEvent.Save(chunk, world, data));
     }
 
-    public static void onChunkDataLoad(ChunkAccess chunk, CompoundTag data, ChunkType status) {
+    public static void onChunkDataLoad(ChunkAccess chunk, SerializableChunkData data, ChunkType status) {
         post(new ChunkDataEvent.Load(chunk, data, status));
     }
 
@@ -1090,5 +1081,9 @@ public final class ForgeEventFactory {
 
     public static LootingLevelEvent fireLootingLevel(LivingEntity target, @Nullable DamageSource cause, int level) {
         return fire(new LootingLevelEvent(target, cause, level));
+    }
+
+    public static boolean fireFarmlandTrampleEvent(ServerLevel level, BlockPos pos, BlockState state, float fallDistance, Entity entity) {
+        return post(new BlockEvent.FarmlandTrampleEvent(level, pos, state, fallDistance, entity));
     }
 }

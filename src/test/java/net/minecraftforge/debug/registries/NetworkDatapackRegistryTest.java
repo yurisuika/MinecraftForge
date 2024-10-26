@@ -7,7 +7,6 @@ package net.minecraftforge.debug.registries;
 
 import java.util.Set;
 
-import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
@@ -77,9 +76,9 @@ public class NetworkDatapackRegistryTest extends BaseTestMod {
     private static void client_has_registry_client_code(GameTestHelper helper) {
         var mc = Minecraft.getInstance();
         var level = mc.level;
-        var reg = level.registryAccess().registry(REGISTRY_KEY);
+        var reg = level.registryAccess().lookup(REGISTRY_KEY);
         helper.assertTrue(reg.isPresent(), "Failed to find " + REGISTRY_KEY.location());
-        var entry = reg.get().get(TEST_ENTRY);
+        var entry = reg.get().getValue(TEST_ENTRY);
         if (entry == null)
             helper.fail("Failed to find " + TEST_ENTRY);
         helper.assertValueEqual(entry.value, TEST_VALUE, "Loaded entry does not contain expected value");

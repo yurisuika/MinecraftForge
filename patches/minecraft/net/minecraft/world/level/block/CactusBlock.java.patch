@@ -34,7 +34,7 @@
              }
          }
      }
-@@ -99,7 +_,7 @@
+@@ -108,7 +_,7 @@
          }
  
          BlockState blockstate1 = p_51154_.getBlockState(p_51155_.below());
@@ -43,7 +43,7 @@
      }
  
      @Override
-@@ -115,5 +_,15 @@
+@@ -124,5 +_,15 @@
      @Override
      protected boolean isPathfindable(BlockState p_51143_, PathComputationType p_51146_) {
          return false;

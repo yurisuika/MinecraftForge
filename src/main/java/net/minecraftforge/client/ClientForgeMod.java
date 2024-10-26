@@ -21,11 +21,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD, modid = "forge")
-public class ClientForgeMod
-{
+public class ClientForgeMod {
     @SubscribeEvent
-    public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event)
-    {
+    public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register("empty", EmptyModel.LOADER);
         event.register("elements", ElementsModel.Loader.INSTANCE);
         event.register("obj", ObjLoader.INSTANCE);
@@ -36,14 +34,12 @@ public class ClientForgeMod
     }
 
     @SubscribeEvent
-    public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
-    {
+    public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(ObjLoader.INSTANCE);
     }
 
     @SubscribeEvent
-    public static void onRegisterNamedRenderTypes(RegisterNamedRenderTypesEvent event)
-    {
+    public static void onRegisterNamedRenderTypes(RegisterNamedRenderTypesEvent event) {
         event.register("item_unlit", RenderType.translucent(), ForgeRenderTypes.ITEM_UNSORTED_UNLIT_TRANSLUCENT.get());
     }
 }

@@ -6,7 +6,6 @@
 package net.minecraftforge.client.event;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.SkullModel;
 import net.minecraft.client.model.SkullModelBase;
 import net.minecraft.client.model.geom.EntityModelSet;
@@ -18,8 +17,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -128,12 +127,12 @@ public abstract class EntityRenderersEvent extends Event implements IModBusEvent
      * only on the {@linkplain LogicalSide#CLIENT logical client}.</p>
      */
     public static class AddLayers extends EntityRenderersEvent {
-        private final Map<EntityType<?>, EntityRenderer<?>> renderers;
-        private final Map<PlayerSkin.Model, EntityRenderer<? extends Player>> skinMap;
+        private final Map<EntityType<?>, EntityRenderer<?, ?>> renderers;
+        private final Map<PlayerSkin.Model, EntityRenderer<? extends Player, ?>> skinMap;
         private final EntityRendererProvider.Context context;
 
         @ApiStatus.Internal
-        public AddLayers(Map<EntityType<?>, EntityRenderer<?>> renderers, Map<PlayerSkin.Model, EntityRenderer<? extends Player>> playerRenderers, EntityRendererProvider.Context context) {
+        public AddLayers(Map<EntityType<?>, EntityRenderer<?, ?>> renderers, Map<PlayerSkin.Model, EntityRenderer<? extends Player, ?>> playerRenderers, EntityRendererProvider.Context context) {
             this.renderers = renderers;
             this.skinMap = playerRenderers;
             this.context = context;
@@ -160,7 +159,7 @@ public abstract class EntityRenderersEvent extends Event implements IModBusEvent
          */
         @Nullable
         @SuppressWarnings("unchecked")
-        public <R extends EntityRenderer<? extends Player>> R getPlayerSkin(PlayerSkin.Model skinName) {
+        public <R extends EntityRenderer<? extends Player, ?>> R getPlayerSkin(PlayerSkin.Model skinName) {
             return (R)skinMap.get(skinName);
         }
 
@@ -174,7 +173,7 @@ public abstract class EntityRenderersEvent extends Event implements IModBusEvent
          */
         @Nullable
         @SuppressWarnings("unchecked")
-        public <T extends LivingEntity, R extends EntityRenderer<T>> R getEntityRenderer(EntityType<? extends T> entityType) {
+        public <T extends LivingEntity, S extends EntityRenderState, R extends EntityRenderer<T, S>> R getEntityRenderer(EntityType<? extends T> entityType) {
             return (R)renderers.get(entityType);
         }
 

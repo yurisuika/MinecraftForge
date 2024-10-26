@@ -5,12 +5,8 @@
     "X": {
       "type": "forge:intersection",
       "children": [
-        {
-          "tag": "custom_ingredients:left"
-        },
-        {
-          "tag": "custom_ingredients:right"
-        }
+        "#custom_ingredients:left",
+        "#custom_ingredients:right"
       ]
     }
   },

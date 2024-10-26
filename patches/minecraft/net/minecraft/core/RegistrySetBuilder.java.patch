@@ -40,7 +40,7 @@
              return lookupFromMap(p_313093_, lifecycle, p_312548_, map);
          }
      }
-@@ -266,6 +_,11 @@
+@@ -265,6 +_,11 @@
                  @Override
                  public <S> HolderGetter<S> lookup(ResourceKey<? extends Registry<? extends S>> p_255961_) {
                      return (HolderGetter<S>)BuildState.this.registries.getOrDefault(p_255961_.location(), BuildState.this.lookup);

@@ -8,53 +8,55 @@ package net.minecraftforge.client.event;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.fml.event.IModBusEvent;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.mojang.blaze3d.audio.Channel;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.datafixers.util.Pair;
-
 import net.minecraft.client.Camera;
+import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.client.renderer.entity.ItemFrameRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.ItemFrameRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.entity.state.PlayerRenderState;
 import net.minecraft.client.resources.PlayerSkin.Model;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.sound.PlaySoundSourceEvent;
 import net.minecraftforge.client.event.sound.PlayStreamingSourceEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -88,33 +90,27 @@ public final class ForgeEventFactoryClient {
         ML.postEvent(e);
     }
 
-    public static void onGatherLayers(Map<EntityType<?>, EntityRenderer<?>> renderers, Map<Model, EntityRenderer<? extends Player>> playerRenderers, Context context) {
+    public static void onGatherLayers(Map<EntityType<?>, EntityRenderer<?, ?>> renderers, Map<Model, EntityRenderer<? extends Player, ?>> playerRenderers, Context context) {
         // TODO: Why is this a ModLoader event...
         postModBus(new EntityRenderersEvent.AddLayers(renderers, playerRenderers, context));
     }
 
-    public static void onRegisterShaders(ResourceProvider resourceProvider, List<Pair<ShaderInstance, Consumer<ShaderInstance>>> shaderList) {
-        // TODO: Why is this a ModLoader event...
-        postModBus(new RegisterShadersEvent(resourceProvider, shaderList));
+    public static boolean onScreenMouseReleased(Screen screen, double mouseX, double mouseY, int button) {
+        if (post(new ScreenEvent.MouseButtonReleased.Pre(screen, mouseX, mouseY, button)))
+            return true;
+
+        var ret = screen.mouseReleased(mouseX, mouseY, button);
+        var result = fire(new ScreenEvent.MouseButtonReleased.Post(screen, mouseX, mouseY, button, ret)).getResult();
+        return result == Event.Result.DEFAULT ? ret : result == Event.Result.ALLOW;
     }
 
-    public static void onScreenMouseReleased(boolean[] state, Screen screen, double mouseX, double mouseY, int button) {
-        state[0] = post(new ScreenEvent.MouseButtonReleased.Pre(screen, mouseX, mouseY, button));
-        if (!state[0]) {
-            state[0] = screen.mouseReleased(mouseX, mouseY, button);
-            var result = fire(new ScreenEvent.MouseButtonReleased.Post(screen, mouseX, mouseY, button, state[0])).getResult();
-            state[0] = result == Event.Result.DEFAULT ? state[0] : result == Event.Result.ALLOW;
-        }
-    }
+    public static boolean onScreenMouseClicked(Screen screen, double mouseX, double mouseY, int button) {
+        var ret = post(new ScreenEvent.MouseButtonPressed.Pre(screen, mouseX, mouseY, button));
+        if (!ret)
+            ret = screen.mouseClicked(mouseX, mouseY, button);
 
-    public static void onScreenMouseClicked(boolean[] state, Screen screen, double mouseX, double mouseY, int button) {
-        state[0] = post(new ScreenEvent.MouseButtonPressed.Pre(screen, mouseX, mouseY, button));
-        if (!state[0]) {
-            state[0] = screen.mouseClicked(mouseX, mouseY, button);
-        }
-
-        var result = fire(new ScreenEvent.MouseButtonPressed.Post(screen, mouseX, mouseY, button, state[0])).getResult();
-        state[0] = result == Event.Result.DEFAULT ? state[0] : result == Event.Result.ALLOW;
+        var result = fire(new ScreenEvent.MouseButtonPressed.Post(screen, mouseX, mouseY, button, ret)).getResult();
+        return result == Event.Result.DEFAULT ? ret : result == Event.Result.ALLOW;
     }
 
     public static boolean onMouseButtonPre(int button, int action, int mods) {
@@ -141,8 +137,8 @@ public final class ForgeEventFactoryClient {
         return post(new ScreenEvent.MouseDragged.Pre(guiScreen, mouseX, mouseY, mouseButton, dragX, dragY));
     }
 
-    public static void onScreenMouseDragPost(Screen guiScreen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        post(new ScreenEvent.MouseDragged.Post(guiScreen, mouseX, mouseY, mouseButton, dragX, dragY));
+    public static boolean onScreenMouseDragPost(Screen guiScreen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
+        return post(new ScreenEvent.MouseDragged.Post(guiScreen, mouseX, mouseY, mouseButton, dragX, dragY));
     }
 
     public static @Nullable Screen onScreenOpening(Screen old, Screen screen) {
@@ -216,7 +212,7 @@ public final class ForgeEventFactoryClient {
         post(new ClientPlayerNetworkEvent.Clone(pc, oldPlayer, newPlayer, networkManager));
     }
 
-    public static ViewportEvent.ComputeFov fireComputeFov(GameRenderer renderer, Camera camera, double partialTick, double fov, boolean usedConfiguredFov) {
+    public static ViewportEvent.ComputeFov fireComputeFov(GameRenderer renderer, Camera camera, double partialTick, float fov, boolean usedConfiguredFov) {
         return fire(new ViewportEvent.ComputeFov(renderer, camera, partialTick, fov, usedConfiguredFov));
     }
 
@@ -224,32 +220,32 @@ public final class ForgeEventFactoryClient {
         return fire(new ViewportEvent.ComputeCameraAngles(renderer, camera, partial, camera.getYRot(), camera.getXRot(), 0));
     }
 
-    public static <T extends LivingEntity, M extends EntityModel<T>> boolean onRenderLivingPre(LivingEntity entity, LivingEntityRenderer<T, M> renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        return post(new RenderLivingEvent.Pre<T, M>(entity, renderer, partialTick, poseStack, multiBufferSource, packedLight));
+    public static <T extends LivingEntity, S extends LivingEntityRenderState, M extends EntityModel<? super S>> boolean onRenderLivingPre(S state, LivingEntityRenderer<T, S, M> renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return post(new RenderLivingEvent.Pre<T, S, M>(state, renderer, poseStack, multiBufferSource, packedLight));
     }
 
-    public static <T extends LivingEntity, M extends EntityModel<T>> boolean onRenderLivingPost(LivingEntity entity, LivingEntityRenderer<T, M> renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        return post(new RenderLivingEvent.Post<T, M>(entity, renderer, partialTick, poseStack, multiBufferSource, packedLight));
+    public static <T extends LivingEntity, S extends LivingEntityRenderState, M extends EntityModel<? super S>> boolean onRenderLivingPost(S state, LivingEntityRenderer<T, S, M> renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return post(new RenderLivingEvent.Post<T, S, M>(state, renderer, poseStack, multiBufferSource, packedLight));
     }
 
-    public static boolean onRenderPlayerPre(Player player, PlayerRenderer renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        return post(new RenderPlayerEvent.Pre(player, renderer, partialTick, poseStack, multiBufferSource, packedLight));
+    public static boolean onRenderPlayerPre(PlayerRenderState player, PlayerRenderer renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return post(new RenderPlayerEvent.Pre(player, renderer, poseStack, multiBufferSource, packedLight));
     }
 
-    public static boolean onRenderPlayerPost(Player player, PlayerRenderer renderer, float partialTick, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        return post(new RenderPlayerEvent.Post(player, renderer, partialTick, poseStack, multiBufferSource, packedLight));
+    public static boolean onRenderPlayerPost(PlayerRenderState player, PlayerRenderer renderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return post(new RenderPlayerEvent.Post(player, renderer, poseStack, multiBufferSource, packedLight));
     }
 
-    public static boolean onRenderArm(PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight, AbstractClientPlayer player, HumanoidArm arm) {
-        return post(new RenderArmEvent(poseStack, multiBufferSource, packedLight, player, arm));
+    public static boolean onRenderArm(PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight, HumanoidArm arm) {
+        return post(new RenderArmEvent(poseStack, multiBufferSource, packedLight, arm));
     }
 
-    public static boolean onRenderItemInFrame(ItemFrame itemFrame, ItemFrameRenderer<?> renderItemFrame, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
-        return post(new RenderItemInFrameEvent(itemFrame, renderItemFrame, poseStack, multiBufferSource, packedLight));
+    public static boolean onRenderItemInFrame(ItemFrameRenderState state, ItemFrameRenderer<?> renderItemFrame, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return post(new RenderItemInFrameEvent(state, renderItemFrame, poseStack, multiBufferSource, packedLight));
     }
 
-    public static RenderNameTagEvent fireRenderNameTagEvent(Entity entity, Component content, EntityRenderer<?> entityRenderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight, float partialTick) {
-        return fire(new RenderNameTagEvent(entity, content, entityRenderer, poseStack, multiBufferSource, packedLight, partialTick));
+    public static RenderNameTagEvent fireRenderNameTagEvent(EntityRenderState state, Component content, EntityRenderer<?, ?> entityRenderer, PoseStack poseStack, MultiBufferSource multiBufferSource, int packedLight) {
+        return fire(new RenderNameTagEvent(state, content, entityRenderer, poseStack, multiBufferSource, packedLight));
     }
 
     public static void onRenderScreenBackground(Screen screen, GuiGraphics guiGraphics) {
@@ -262,5 +258,25 @@ public final class ForgeEventFactoryClient {
 
     public static void onRenderTickEnd(DeltaTracker timer) {
         post(new TickEvent.RenderTickEvent.Post(timer));
+    }
+
+    public static RenderTooltipEvent.Background onRenderTooltipBackground(@NotNull ItemStack stack, GuiGraphics graphics, int x, int y, @NotNull Font font, @NotNull List<ClientTooltipComponent> components, @Nullable ResourceLocation backgroundPrefix) {
+        return fire(new RenderTooltipEvent.Background(stack, graphics, x, y, font, components, backgroundPrefix));
+    }
+
+    public static boolean onToastAdd(Toast toast) {
+        return post(new ToastAddEvent(toast));
+    }
+
+    public static ScreenEvent.RenderInventoryMobEffects onScreenEffectSize(Screen screen, int availableSpace, boolean compact, int horizontalOffset) {
+        return fire(new ScreenEvent.RenderInventoryMobEffects(screen, availableSpace, compact, horizontalOffset));
+    }
+
+    public static void onRecipesUpdated(ClientRecipeBook book) {
+        post(new RecipesUpdatedEvent(book));
+    }
+
+    public static ComputeFovModifierEvent fireFovModifierEvent(Player entity, float modifier, float scale) {
+        return fire(new ComputeFovModifierEvent(entity, modifier, scale));
     }
 }

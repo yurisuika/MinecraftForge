@@ -1,7 +1,7 @@
 --- a/net/minecraft/world/item/crafting/ShapedRecipe.java
 +++ b/net/minecraft/world/item/crafting/ShapedRecipe.java
-@@ -11,7 +_,19 @@
- import net.minecraft.world.item.ItemStack;
+@@ -18,7 +_,19 @@
+ import net.minecraft.world.item.crafting.display.SlotDisplay;
  import net.minecraft.world.level.Level;
  
 -public class ShapedRecipe implements CraftingRecipe {
@@ -21,10 +21,13 @@
      final ShapedRecipePattern pattern;
      final ItemStack result;
      final String group;
-@@ -82,9 +_,19 @@
-     }
+@@ -66,6 +_,16 @@
+         }
  
-     @Override
+         return this.placementInfo;
++    }
++
++    @Override
 +    public int getRecipeWidth() {
 +        return getWidth();
 +    }
@@ -32,13 +35,6 @@
 +    @Override
 +    public int getRecipeHeight() {
 +        return getHeight();
-+    }
-+
-+    @Override
-     public boolean isIncomplete() {
-         NonNullList<Ingredient> nonnulllist = this.getIngredients();
--        return nonnulllist.isEmpty() || nonnulllist.stream().filter(p_151277_ -> !p_151277_.isEmpty()).anyMatch(p_151273_ -> p_151273_.getItems().length == 0);
-+        return nonnulllist.isEmpty() || nonnulllist.stream().filter(p_151277_ -> !p_151277_.isEmpty()).anyMatch(net.minecraftforge.common.ForgeHooks::hasNoElements);
      }
  
-     public static class Serializer implements RecipeSerializer<ShapedRecipe> {
+     @Override
